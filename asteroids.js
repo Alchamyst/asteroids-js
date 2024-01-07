@@ -43,7 +43,7 @@ class Ship {
         this.x = canvasWidth / 2;
         this.y = canvasHeight / 2;
         this.movingForward = false;
-        this.speed = 0.1;
+        this.speed = 0.075;
         this.velocityX = 0;
         this.velocityY = 0;
         this.rotateSpeed = 0.001;
@@ -106,7 +106,7 @@ class Bullet {
         this.angle = angle;
         this.height = 4;
         this.width = 4;
-        this.speed = 5;
+        this.speed = 7.5;
         this.velocityX = 0;
         this.velocityY = 0;
     }
