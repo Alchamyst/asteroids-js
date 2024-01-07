@@ -3,13 +3,24 @@ let ctx;
 let canvasWidth = 1200;
 let canvasHeight = 800;
 let ship;
+
 let keys = [];
 let bullets = [];
 let asteroids = [];
 let score = 0;
 let lives = 3;
 
-document.addEventListener('DOMContentLoaded', SetupCanvas);
+// let coordinator;
+// let gameManager;
+// let screen;
+
+document.addEventListener('DOMContentLoaded', SetupCanvas); //to be changed to LoadGame
+
+// function LoadGame(){
+//     coordinator =  new Coordinator();
+//     gameManager = new GameManager(); 
+//     screen = new Screen();
+// }
 
 function SetupCanvas() {
     canvas = document.getElementById('my-canvas');
@@ -17,15 +28,11 @@ function SetupCanvas() {
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     ctx.fillStyle = 'black';
-    ctx.fillRect(0,0,canvasWidth,canvasHeight);
+    ctx.fillRect(0,0,canvasWidth,canvasHeight);  
 
     ship = new Ship();
 
-    for(let i = 0; i < 8; i++){
-        asteroids.push(new Asteroid());
-    }
-
-    for(let i = 0; i < 2; i++){
+    for(let i = 0; i < 7; i++){
         asteroids.push(new Asteroid());
     }
 
@@ -41,6 +48,40 @@ function SetupCanvas() {
     Render();
 }
 
+class Coordinator {
+    // Create Canvas
+    // Create GameManager
+    // Listens for events from Canvas and GameManager, coordinator can decide what to do (call Canvas to render where relevant)
+}
+
+class GameManager {
+    constructor(){
+        this.gameState = 'START'; // START, RUNNING, PAUSE, GAME_OVER
+    }
+    NewGame(){
+        this.gameState = 'RUNNING';
+    }
+    PauseGame(){
+        this.gameState = 'PAUSED';
+    }
+    GameOver(){
+        this.gameState = 'GAME_OVER';
+    }
+}
+
+class Screen {
+    SetupCanvas(){
+
+    }
+}
+
+class InputManager {
+    constructor() {
+        // this.keys = []; 
+    }
+    // events to be fire for keys: A,W,D,SpaceBar, Enter, ArrowLeft, ArrowUp, ArrowDown
+}
+
 class Ship {
     constructor(){
         this.visible = true;
@@ -50,7 +91,7 @@ class Ship {
         this.speed = 0.075;
         this.velocityX = 0;
         this.velocityY = 0;
-        this.rotateSpeed = 0.001;
+        this.rotateSpeed = 0.00075;
         this.radius = 15;
         this.collisionRadius = 11;
         this.angle = 0;
@@ -101,6 +142,13 @@ class Ship {
         ctx.closePath();
         ctx.stroke();
 
+        ctx.beginPath();
+        ctx.strokeStyle = 'green';
+        ctx.arc(this.noseX, this.noseY, 2,0,2* Math.PI);
+        // ctx.rect(this.noseX, this.noseX, 1, 2);
+        ctx.closePath();
+        ctx.stroke();
+
         // Collision rendering for debug.
         // ctx.beginPath();
         // ctx.strokeStyle = 'green';
@@ -109,6 +157,7 @@ class Ship {
         // ctx.stroke();
     }
 }
+
 
 class Bullet {
     constructor(angle){
@@ -133,7 +182,7 @@ class Bullet {
         ctx.fillRect(this.x, this.y, this.width, this.height);
     }
     CleanUp(){
-        if(this.x < 0 || this.y < 0 || this.x > canvas.width || this.y > canvas.height){
+        if(this.x < -25 || this.y < -25 || this.x > canvas.width +25 || this.y > canvas.height +25){
             var i = bullets.indexOf(this);
             return bullets.splice(i,1);
         }
@@ -145,7 +194,7 @@ class Asteroid {
         this.visible = true;
         this.x = x || Math.floor(Math.random() * canvasWidth);
         this.y = y || Math.floor(Math.random() * canvasHeight);
-        this.speed = 2;
+        this.speed = 1.25;
         // this.speed = 0;
         this.radius = radius || 50;
         this.angle = Math.floor(Math.random() * 359);
@@ -238,6 +287,8 @@ function Render(){
         ctx.fillStyle = 'white';
         ctx.font = '50px Arial';
         ctx.fillText('GAME OVER', canvasWidth / 2 - 150, canvasHeight / 2);
+        // ctx.font = '20px Arial';
+        // ctx.fillText('Press Enter To Try Again', canvasWidth / 2 - 108, (canvasHeight / 2) + 40);
     }
     DrawLifeShips();
 
@@ -272,7 +323,6 @@ function Render(){
                     }
                     asteroids.splice(i,1);
                     bullets.splice(j,1);
-                    console.log("You shot an asteroid!");
                 }
             }
         }
