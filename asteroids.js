@@ -1,5 +1,5 @@
 let canvas;
-let context;
+let ctx;
 let canvasWidth = 1200;
 let canvasHeight = 800;
 let ship;
@@ -13,15 +13,19 @@ document.addEventListener('DOMContentLoaded', SetupCanvas);
 
 function SetupCanvas() {
     canvas = document.getElementById('my-canvas');
-    context = canvas.getContext('2d');
+    ctx = canvas.getContext('2d');
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
-    context.fillStyle = 'black';
-    context.fillRect(0,0,canvasWidth,canvasHeight);
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0,0,canvasWidth,canvasHeight);
 
     ship = new Ship();
 
     for(let i = 0; i < 8; i++){
+        asteroids.push(new Asteroid());
+    }
+
+    for(let i = 0; i < 2; i++){
         asteroids.push(new Asteroid());
     }
 
@@ -30,7 +34,7 @@ function SetupCanvas() {
     });
     document.body.addEventListener("keyup", function(e){
         keys[e.keyCode] = false;
-        if(e.keyCode === 32){
+        if(e.keyCode === 32 && ship.visible){
             bullets.push(new Bullet(ship.angle));
         }
     });
@@ -48,6 +52,7 @@ class Ship {
         this.velocityY = 0;
         this.rotateSpeed = 0.001;
         this.radius = 15;
+        this.collisionRadius = 11;
         this.angle = 0;
         this.strokeColor = 'white';
         this.noseX = canvasWidth / 2 + 15;
@@ -84,17 +89,24 @@ class Ship {
         this.y -= this.velocityY;
     }
     Draw(){
-        context.strokeStyle = this.strokeColor;
-        context.beginPath();
+        ctx.strokeStyle = this.strokeColor;
+        ctx.beginPath();
         let vertAngle = ((Math.PI * 2) /3);
         let radians = this.angle / Math.PI * 180;
         this.noseX = this.x - this.radius * Math.cos(radians);
         this.noseY = this.y - this.radius * Math.sin(radians);
         for(let i = 0; i < 3; i++){
-            context.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
+            ctx.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
         }
-        context.closePath();
-        context.stroke();
+        ctx.closePath();
+        ctx.stroke();
+
+        // Collision rendering for debug.
+        // ctx.beginPath();
+        // ctx.strokeStyle = 'green';
+        // ctx.arc(this.x, this.y, this.collisionRadius,0,2* Math.PI);
+        // ctx.closePath();
+        // ctx.stroke();
     }
 }
 
@@ -106,7 +118,8 @@ class Bullet {
         this.angle = angle;
         this.height = 4;
         this.width = 4;
-        this.speed = 7.5;
+        this.collisionRadius = 3;
+        this.speed = 7;
         this.velocityX = 0;
         this.velocityY = 0;
     }
@@ -116,8 +129,14 @@ class Bullet {
         this.y -= Math.sin(radians) * this.speed;
     }
     Draw(){
-        context.fillStyle = 'white';
-        context.fillRect(this.x, this.y, this.width, this.height);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+    CleanUp(){
+        if(this.x < 0 || this.y < 0 || this.x > canvas.width || this.y > canvas.height){
+            var i = bullets.indexOf(this);
+            return bullets.splice(i,1);
+        }
     }
 }
 
@@ -127,6 +146,7 @@ class Asteroid {
         this.x = x || Math.floor(Math.random() * canvasWidth);
         this.y = y || Math.floor(Math.random() * canvasHeight);
         this.speed = 2;
+        // this.speed = 0;
         this.radius = radius || 50;
         this.angle = Math.floor(Math.random() * 359);
         this.strokeColor = 'white';
@@ -151,15 +171,22 @@ class Asteroid {
         }
     }
     Draw(){
-        context.strokeStyle = this.strokeColor;
-        context.beginPath();
+        ctx.strokeStyle = this.strokeColor;
+        ctx.beginPath();
         let vertAngle = ((Math.PI * 2) / 6);
         var radians = this.angle / Math.PI * 180;
         for(let i = 0; i < 6; i++){
-            context.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
+            ctx.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
         }
-        context.closePath();
-        context.stroke();
+        ctx.closePath();
+        ctx.stroke();
+
+        //Collision rendering for debug.
+        // ctx.beginPath();
+        // ctx.strokeStyle = 'yellow';
+        // ctx.arc(this.x, this.y, this.collisionRadius,0,2* Math.PI);
+        // ctx.closePath();
+        // ctx.stroke();
     }
 }
 
@@ -170,7 +197,7 @@ function CircleCollision(p1x, p1y, r1, p2x, p2y, r2){
     radiusSum = r1 + r2;
     xDiff = p1x - p2x;
     yDiff = p1y - p2y;
-    if(radiusSum > Math.sqrt((xDiff * yDiff) + (yDiff + yDiff))){
+    if(radiusSum > Math.sqrt((xDiff * xDiff) + (yDiff * yDiff))){
         return true;
     }
     return false;
@@ -180,48 +207,87 @@ function DrawLifeShips(){
     let startX = 1175;
     let startY = 10;
     let points = [[9,9],[-9,9]];
-    context.strokeStyle = 'white';
+    ctx.strokeStyle = 'white';
     for(let i = 0; i < lives; i++){
-        context.beginPath();
-        context.moveTo(startX, startY);
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
         for(let j = 0; j < points.length; j++){
-            context.lineTo(startX + points[j][0], startY + points[j][1]);
+            ctx.lineTo(startX + points[j][0], startY + points[j][1]);
         }
-        context.closePath();
-        context.stroke();
+        ctx.closePath();
+        ctx.stroke();
         startX -= 30;
     }
 }
 
 function Render(){
-    //keys: 87=w, 68=d, 65=a
-    ship.movingForward = (keys[87]); 
-    if(keys[68]){
+    //keys: 87=w, 68=d, 65=a, arrows: left=37, up=38, right=39
+    ship.movingForward = (keys[87] || keys[38]); 
+    if(keys[68] || keys[39]){
         ship.Rotate(1);
     }
-    if(keys[65]){
+    if(keys[65] || keys[37]){
         ship.Rotate(-1);
     }
-    context.clearRect(0,0, canvasWidth, canvasHeight);
-    context.fillStyle = 'white';
-    context.font = '20px Arial';
-    context.fillText('SCORE: ' + score.toString(), 20, 35);
+    ctx.clearRect(0,0, canvasWidth, canvasHeight);
+    ctx.fillStyle = 'white';
+    ctx.font = '20px Arial';
+    ctx.fillText('SCORE: ' + score.toString(), 20, 35);
     if(lives <= 0 ){
         ship.visible = false;
-        context.fillStyle = 'white';
-        context.font = '50px Arial';
-        context.fillText('GAME OVER', canvasWidth / 2 - 150, canvasHeight / 2);
+        ctx.fillStyle = 'white';
+        ctx.font = '50px Arial';
+        ctx.fillText('GAME OVER', canvasWidth / 2 - 150, canvasHeight / 2);
     }
     DrawLifeShips();
 
+    if(asteroids.length !== 0){
+        for(let i = 0; i < asteroids.length; i++){
+            if(CircleCollision(ship.x, ship.y, ship.collisionRadius, asteroids[i].x, asteroids[i].y, asteroids[i].collisionRadius)){
+                ship.x = canvasWidth / 2;
+                ship.y = canvasHeight / 2;
+                ship.velocityX = 0;
+                ship.velocityY = 0;
+                lives -= 1;
+            }
+        }
+    }
 
+    if(asteroids.length !== 0 && bullets.length !== 0){
 
-    ship.Update();
-    ship.Draw();
+        for(let i = 0; i < asteroids.length; i++){
+        loop1:
+            for(let j = 0; j < bullets.length; j++){
+                if(CircleCollision(bullets[j].x, bullets[j].y, bullets[j].collisionRadius, asteroids[i].x, asteroids[i].y, asteroids[i].collisionRadius)){
+                    if(asteroids[i].level === 1){
+                        asteroids.push(new Asteroid(asteroids[i].x - 5, asteroids[i].y -5, 25, 2, 22));
+                        asteroids.push(new Asteroid(asteroids[i].x + 5, asteroids[i].y + 5, 25, 2, 22));
+                        score += 5;
+                    } else if (asteroids[i].level === 2){
+                        asteroids.push(new Asteroid(asteroids[i].x - 5, asteroids[i].y -5, 15, 3, 12));
+                        asteroids.push(new Asteroid(asteroids[i].x + 5, asteroids[i].y + 5, 15, 3, 12));
+                        score += 7;
+                    } else if (asteroids[i].level === 3){
+                        score += 9;
+                    }
+                    asteroids.splice(i,1);
+                    bullets.splice(j,1);
+                    console.log("You shot an asteroid!");
+                }
+            }
+        }
+    }
+
+    if(ship.visible){
+        ship.Update();
+        ship.Draw();
+    }
+
     if(bullets.length !==0){
         for(let i = 0; i < bullets.length; i++){
             bullets[i].Update();
             bullets[i].Draw();
+            bullets[i].CleanUp();
         }
     }
     if(asteroids.length !==0){
