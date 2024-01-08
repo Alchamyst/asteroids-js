@@ -1,65 +1,87 @@
+
+const canvasWidth = 1200;
+const canvasHeight = 800;
 let canvas;
-let ctx;
-let canvasWidth = 1200;
-let canvasHeight = 800;
-let ship;
+let context;
 
-let keys = [];
-let bullets = [];
-let asteroids = [];
-let score = 0;
-let lives = 3;
+let secondsPassed = 0;
+let oldTimeStamp = 0;
+let fps;
+let hud;
 
-// let coordinator;
-// let gameManager;
-// let screen;
+let gameObjects = [];
 
-document.addEventListener('DOMContentLoaded', SetupCanvas); //to be changed to LoadGame
+document.addEventListener('DOMContentLoaded', init); 
 
-// function LoadGame(){
-//     coordinator =  new Coordinator();
-//     gameManager = new GameManager(); 
-//     screen = new Screen();
-// }
-
-function SetupCanvas() {
+function init(){
     canvas = document.getElementById('my-canvas');
-    ctx = canvas.getContext('2d');
+    context = canvas.getContext('2d');
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
-    ctx.fillStyle = 'black';
-    ctx.fillRect(0,0,canvasWidth,canvasHeight);  
+    clearScreen();
 
-    ship = new Ship();
 
-    for(let i = 0; i < 7; i++){
-        asteroids.push(new Asteroid());
+    // livesCounter = new LivesCounter(context);
+    // timersHUD = new TimersHUD(context);
+
+    gameObjects.push(new TimersHUD(context));
+    gameObjects.push(new LivesCounter(context));
+    gameObjects.push(new Ship(context));
+    // let Player = new Ship(context, canvasWidth / 2, canvasHeight / 2, 0, 0, collisionRadius);
+
+    window.requestAnimationFrame(gameLoop);
+}
+
+function clearScreen(){
+    context.fillStyle = 'black';
+    context.fillRect(0,0,canvasWidth,canvasHeight); 
+}
+
+
+function gameLoop(timeStamp) {
+    secondsPassed = (timeStamp - oldTimeStamp) / 1000;
+    oldTimeStamp = timeStamp;
+
+    // Calculate fps
+    fps = Math.round(1 / secondsPassed);
+
+    // Draw number to the screen
+    // context.fillStyle = 'white';
+    // context.fillRect(0, 0, 200, 100);
+    // context.font = '25px Arial';
+    // context.fillStyle = 'black';
+    // context.fillText("FPS: " + fps, 10, 30);
+
+    clearScreen();
+    // livesCounter.Render();
+    // timersHUD.Render();
+
+    // Loop over all game objects
+    // for (let i = 0; i < gameObjects.length; i++) {
+    //     gameObjects[i].update(secondsPassed);
+    // }
+
+   
+
+    // Do the same to draw
+    for (let i = 0; i < gameObjects.length; i++) {
+        gameObjects[i].Render();
     }
 
-    document.body.addEventListener("keydown", function(e){
-        keys[e.keyCode] = true;
-    });
-    document.body.addEventListener("keyup", function(e){
-        keys[e.keyCode] = false;
-        if(e.keyCode === 32 && ship.visible){
-            bullets.push(new Bullet(ship.angle));
-        }
-    });
-    Render();
+    window.requestAnimationFrame(gameLoop);
 }
 
-class Coordinator {
-    // Create Canvas
-    // Create GameManager
-    // Listens for events from Canvas and GameManager, coordinator can decide what to do (call Canvas to render where relevant)
-}
 
 class GameManager {
     constructor(){
         this.gameState = 'START'; // START, RUNNING, PAUSE, GAME_OVER
+        this.currentLives = 3;
+        this.currentScore = 0;
     }
     NewGame(){
         this.gameState = 'RUNNING';
+        this.currentLives = 3;
+        this.currentScore = 0;
     }
     PauseGame(){
         this.gameState = 'PAUSED';
@@ -69,28 +91,74 @@ class GameManager {
     }
 }
 
-class Screen {
-    SetupCanvas(){
 
+
+class GameObject {
+    constructor(ctx, x, y){
+        this.ctx = ctx;
+        this.x = x;
+        this.y = y;
     }
 }
 
-class InputManager {
-    constructor() {
-        // this.keys = []; 
+class HudElement extends GameObject {
+    constructor(ctx, startX, startY){
+        super(ctx, startX, startY);
+        this.color = 'white';
     }
-    // events to be fire for keys: A,W,D,SpaceBar, Enter, ArrowLeft, ArrowUp, ArrowDown
 }
 
-class Ship {
-    constructor(){
-        this.visible = true;
-        this.x = canvasWidth / 2;
-        this.y = canvasHeight / 2;
-        this.movingForward = false;
+class LivesCounter extends HudElement {
+    constructor(ctx){
+        super(ctx, 1175, 10);     
+        this.lives = 3;
+    }
+    Render(){
+        let points = [[9,9],[-9,9]];
+        let renderX = this.x 
+        this.ctx.strokeStyle = this.color;
+
+        for(let i = 0; i < this.lives; i++){
+            this.ctx.beginPath();
+            this.ctx.moveTo(renderX, this.y);
+            for(let j = 0; j < points.length; j++){
+                this.ctx.lineTo(renderX + points[j][0], this.y + points[j][1]);
+            }
+            this.ctx.closePath();
+            this.ctx.stroke();
+            renderX -= 30;
+        }
+    }
+}
+
+class TimersHUD extends HudElement {
+    constructor(ctx){
+        super(ctx, canvasWidth-125, canvasHeight-25);     
+    }
+    Render(){
+        // this.ctx.fillStyle = 'white';
+        // this.ctx.fillRect(this.x, this.y, 200, 100);
+        this.ctx.font = '25px Arial';
+        this.ctx.fillStyle = 'white';
+        this.ctx.fillText("FPS: " + fps, this.x, this.y);
+        // this.ctx.fillText("SP: " + secondsPassed, this.x-50, this.y-40);      
+    }
+}
+
+class PhysicsObject extends GameObject {
+    constructor(context, x, y, velocityX, velocityY, collisionRadius){
+        super(context, x, y);
+        this.velocityX = velocityX;
+        this.velocityY = velocityY;
+        this.collisionRadius = collisionRadius;
+        this.isColliding = false;
+    }
+}
+
+class Ship extends GameObject {
+    constructor(ctx){
+        super(ctx, canvasWidth / 2 , canvasHeight / 2);
         this.speed = 0.075;
-        this.velocityX = 0;
-        this.velocityY = 0;
         this.rotateSpeed = 0.00075;
         this.radius = 15;
         this.collisionRadius = 11;
@@ -99,252 +167,27 @@ class Ship {
         this.noseX = canvasWidth / 2 + 15;
         this.noseY = canvasHeight / 2;
     }
-    Rotate(dir){
-        this.angle += this.rotateSpeed * dir;
-    }
     Update(){
-        let radians = this.angle / Math.PI * 180; //convert from degrees to radians.
-        // oldX + cos(radians) * distance
-        // oldY + sin(radians) * distance
 
-        if(this.movingForward) {
-            this.velocityX += Math.cos(radians) * this.speed;
-            this.velocityY += Math.sin(radians) * this.speed;
-        }
-        if(this.x < this.radius){
-            this.x = canvas.width;
-        }
-        if(this.x > canvas.width){
-            this.x = this.radius;
-        }
-        if(this.y < this.radius){
-            this.y = canvas.height;
-        }
-        if(this.y > canvas.height){
-            this.y = this.radius;
-        }
-        this.velocityX *= 0.99;
-        this.velocityY *= 0.99;
-
-        this.x -= this.velocityX;
-        this.y -= this.velocityY;
     }
-    Draw(){
-        ctx.strokeStyle = this.strokeColor;
-        ctx.beginPath();
+    Render(){
+        this.ctx.strokeStyle = this.strokeColor;
+        this.ctx.beginPath();
         let vertAngle = ((Math.PI * 2) /3);
         let radians = this.angle / Math.PI * 180;
         this.noseX = this.x - this.radius * Math.cos(radians);
         this.noseY = this.y - this.radius * Math.sin(radians);
         for(let i = 0; i < 3; i++){
-            ctx.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
+            this.ctx.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
         }
-        ctx.closePath();
-        ctx.stroke();
+        this.ctx.closePath();
+        this.ctx.stroke();
 
-        ctx.beginPath();
-        ctx.strokeStyle = 'green';
-        ctx.arc(this.noseX, this.noseY, 2,0,2* Math.PI);
+        this.ctx.beginPath();
+        this.ctx.strokeStyle = 'green';
+        this.ctx.arc(this.noseX, this.noseY, 2,0,2* Math.PI);
         // ctx.rect(this.noseX, this.noseX, 1, 2);
-        ctx.closePath();
-        ctx.stroke();
-
-        // Collision rendering for debug.
-        // ctx.beginPath();
-        // ctx.strokeStyle = 'green';
-        // ctx.arc(this.x, this.y, this.collisionRadius,0,2* Math.PI);
-        // ctx.closePath();
-        // ctx.stroke();
+        this.ctx.closePath();
+        this.ctx.stroke();
     }
-}
-
-
-class Bullet {
-    constructor(angle){
-        this.visible = true;
-        this.x = ship.noseX;
-        this.y = ship.noseY;
-        this.angle = angle;
-        this.height = 4;
-        this.width = 4;
-        this.collisionRadius = 3;
-        this.speed = 7;
-        this.velocityX = 0;
-        this.velocityY = 0;
-    }
-    Update(){
-        var radians = this.angle / Math.PI * 180;
-        this.x -= Math.cos(radians) * this.speed;
-        this.y -= Math.sin(radians) * this.speed;
-    }
-    Draw(){
-        ctx.fillStyle = 'white';
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-    }
-    CleanUp(){
-        if(this.x < -25 || this.y < -25 || this.x > canvas.width +25 || this.y > canvas.height +25){
-            var i = bullets.indexOf(this);
-            return bullets.splice(i,1);
-        }
-    }
-}
-
-class Asteroid {
-    constructor(x,y,radius, level,collisionRadius){
-        this.visible = true;
-        this.x = x || Math.floor(Math.random() * canvasWidth);
-        this.y = y || Math.floor(Math.random() * canvasHeight);
-        this.speed = 1.25;
-        // this.speed = 0;
-        this.radius = radius || 50;
-        this.angle = Math.floor(Math.random() * 359);
-        this.strokeColor = 'white';
-        this.collisionRadius = collisionRadius || 46;
-        this.level = level || 1;
-    }
-    Update(){
-        var radians = this.angle / Math.PI * 180;
-        this.x += Math.cos(radians) * this.speed;
-        this.y += Math.sin(radians) * this.speed;
-        if(this.x < (this.radius/2)){
-            this.x = canvas.width;
-        }
-        if(this.x > canvas.width){
-            this.x = this.radius;
-        }
-        if(this.y < (this.radius/2)){
-            this.y = canvas.height;
-        }
-        if(this.y > canvas.height){
-            this.y = this.radius;
-        }
-    }
-    Draw(){
-        ctx.strokeStyle = this.strokeColor;
-        ctx.beginPath();
-        let vertAngle = ((Math.PI * 2) / 6);
-        var radians = this.angle / Math.PI * 180;
-        for(let i = 0; i < 6; i++){
-            ctx.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
-        }
-        ctx.closePath();
-        ctx.stroke();
-
-        //Collision rendering for debug.
-        // ctx.beginPath();
-        // ctx.strokeStyle = 'yellow';
-        // ctx.arc(this.x, this.y, this.collisionRadius,0,2* Math.PI);
-        // ctx.closePath();
-        // ctx.stroke();
-    }
-}
-
-function CircleCollision(p1x, p1y, r1, p2x, p2y, r2){
-    let radiusSum;
-    let xDiff;
-    let yDiff;
-    radiusSum = r1 + r2;
-    xDiff = p1x - p2x;
-    yDiff = p1y - p2y;
-    if(radiusSum > Math.sqrt((xDiff * xDiff) + (yDiff * yDiff))){
-        return true;
-    }
-    return false;
-}
-
-function DrawLifeShips(){
-    let startX = 1175;
-    let startY = 10;
-    let points = [[9,9],[-9,9]];
-    ctx.strokeStyle = 'white';
-    for(let i = 0; i < lives; i++){
-        ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        for(let j = 0; j < points.length; j++){
-            ctx.lineTo(startX + points[j][0], startY + points[j][1]);
-        }
-        ctx.closePath();
-        ctx.stroke();
-        startX -= 30;
-    }
-}
-
-function Render(){
-    //keys: 87=w, 68=d, 65=a, arrows: left=37, up=38, right=39
-    ship.movingForward = (keys[87] || keys[38]); 
-    if(keys[68] || keys[39]){
-        ship.Rotate(1);
-    }
-    if(keys[65] || keys[37]){
-        ship.Rotate(-1);
-    }
-    ctx.clearRect(0,0, canvasWidth, canvasHeight);
-    ctx.fillStyle = 'white';
-    ctx.font = '20px Arial';
-    ctx.fillText('SCORE: ' + score.toString(), 20, 35);
-    if(lives <= 0 ){
-        ship.visible = false;
-        ctx.fillStyle = 'white';
-        ctx.font = '50px Arial';
-        ctx.fillText('GAME OVER', canvasWidth / 2 - 150, canvasHeight / 2);
-        // ctx.font = '20px Arial';
-        // ctx.fillText('Press Enter To Try Again', canvasWidth / 2 - 108, (canvasHeight / 2) + 40);
-    }
-    DrawLifeShips();
-
-    if(asteroids.length !== 0){
-        for(let i = 0; i < asteroids.length; i++){
-            if(CircleCollision(ship.x, ship.y, ship.collisionRadius, asteroids[i].x, asteroids[i].y, asteroids[i].collisionRadius)){
-                ship.x = canvasWidth / 2;
-                ship.y = canvasHeight / 2;
-                ship.velocityX = 0;
-                ship.velocityY = 0;
-                lives -= 1;
-            }
-        }
-    }
-
-    if(asteroids.length !== 0 && bullets.length !== 0){
-
-        for(let i = 0; i < asteroids.length; i++){
-        loop1:
-            for(let j = 0; j < bullets.length; j++){
-                if(CircleCollision(bullets[j].x, bullets[j].y, bullets[j].collisionRadius, asteroids[i].x, asteroids[i].y, asteroids[i].collisionRadius)){
-                    if(asteroids[i].level === 1){
-                        asteroids.push(new Asteroid(asteroids[i].x - 5, asteroids[i].y -5, 25, 2, 22));
-                        asteroids.push(new Asteroid(asteroids[i].x + 5, asteroids[i].y + 5, 25, 2, 22));
-                        score += 5;
-                    } else if (asteroids[i].level === 2){
-                        asteroids.push(new Asteroid(asteroids[i].x - 5, asteroids[i].y -5, 15, 3, 12));
-                        asteroids.push(new Asteroid(asteroids[i].x + 5, asteroids[i].y + 5, 15, 3, 12));
-                        score += 7;
-                    } else if (asteroids[i].level === 3){
-                        score += 9;
-                    }
-                    asteroids.splice(i,1);
-                    bullets.splice(j,1);
-                }
-            }
-        }
-    }
-
-    if(ship.visible){
-        ship.Update();
-        ship.Draw();
-    }
-
-    if(bullets.length !==0){
-        for(let i = 0; i < bullets.length; i++){
-            bullets[i].Update();
-            bullets[i].Draw();
-            bullets[i].CleanUp();
-        }
-    }
-    if(asteroids.length !==0){
-        for(let i = 0; i < asteroids.length; i++){
-            asteroids[i].Update();
-            asteroids[i].Draw();
-        }
-    }
-    requestAnimationFrame(Render);
 }
