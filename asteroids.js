@@ -83,9 +83,13 @@ const detectCollisions = () => {
                 
                 if (obj2 instanceof PhysicsObject && i !==j){
                     if(circleIntersect(obj1.x, obj1.y, obj1.collisionRadius, obj2.x, obj2.y, obj2.collisionRadius)){
+
+                        // Don't treat bullets as colliding with ship.
+                        if ((obj1 instanceof Bullet || obj2 instanceof Bullet) && (obj1 instanceof Ship || obj2 instanceof Ship)) return;
+
                         obj1.isColliding = true;
                         obj1.isColliding = true;
-                            
+                        
                         if ((obj1 instanceof Bullet || obj2 instanceof Bullet) && (obj1 instanceof Asteroid || obj2 instanceof Asteroid)){
                             if(obj1 instanceof Asteroid) {
                                 obj2.Remove();
@@ -96,7 +100,6 @@ const detectCollisions = () => {
                                 obj1.Remove();
                                 obj2.ScoredHit();
                             }
-                            console.log(`Asteroid was shot!`);
                         }
                     }
                 }
@@ -132,6 +135,7 @@ class GameManager {
         // Create HUD & Some Asteroids
         // gameObjects.push(new TimersHUD());
         gameObjects.push(new LivesCounter());
+        gameObjects.push(new ScoreCounter());
         gameObjects.push(new GameMsg('Asteroids','Press Enter To Start'));
         this.SpawnAsteroids(10);
     }
@@ -177,7 +181,7 @@ class GameManager {
     }
     ShipDestroyed(){
         this.currentLives -= 1;
-        if(this.currentLives == 0) return this.GameOver();
+        if(this.currentLives <= 0) return this.GameOver();
 
         for(let i=0; i < gameObjects.length; i++) {
             if(gameObjects[i] instanceof Ship){
@@ -278,6 +282,24 @@ class GameMsg extends HudElement {
     }
 }
 
+class ScoreCounter extends HudElement {
+    constructor(){
+        super(0, 0);     
+        this.score = gameManager.currentScore;
+    }
+    Update(){
+        this.score = gameManager.currentScore;
+    }
+    Render(){
+        context.strokeStyle = this.color;
+
+        // context.clearRect(0,0, canvasWidth, canvasHeight);
+        context.fillStyle = 'white';
+        context.font = '20px Arial';
+        context.fillText('SCORE: ' + this.score.toString(), 20, 35);
+    }
+}    
+
 // ctx.clearRect(0,0, canvasWidth, canvasHeight);
 // ctx.fillStyle = 'white';
 // ctx.font = '20px Arial';
@@ -365,20 +387,20 @@ class Ship extends PhysicsObject {
     Update(secondsPassed){
         super.Update();
 
-        // if(this.isColliding == true && this.shieldTimer == 0){
-        //     gameManager.currentLives -= 1;
+        if(this.isColliding == true && this.shieldTimer == 0){
+            gameManager.currentLives -= 1;
 
-        //     if(gameManager.currentLives == 0) return gameManager.GameOver();
+            if(gameManager.currentLives == 0) return gameManager.GameOver();
 
-        //     this.x = canvasWidth / 2;
-        //     this.y = canvasHeight / 2;
-        //     this.velocityX = 0;
-        //     this.velocityY = 0;
-        //     this.movingForward = false;
-        //     this.dirModifier = 0;
-        //     this.shieldTimer = 3;
-        //     return
-        // }
+            this.x = canvasWidth / 2;
+            this.y = canvasHeight / 2;
+            this.velocityX = 0;
+            this.velocityY = 0;
+            this.movingForward = false;
+            this.dirModifier = 0;
+            this.shieldTimer = 3;
+            return
+        }
 
         this.bulletTimer += secondsPassed;
 
@@ -388,9 +410,6 @@ class Ship extends PhysicsObject {
         if(inputManager.actions.leftButton) this.dirModifier = -1;
         if(inputManager.actions.rightButton) this.dirModifier = 1;
         if(inputManager.actions.fireButton && this.bulletTimer >= this.bulletFireRate){
-            //fire bullets
-            console.log("Pew pew!");
-            // console.log(`nose loc: ${this.noseX},${this.noseY}`);
             gameObjects.push(new Bullet(this.noseX, this.noseY, this.angle));
             this.bulletTimer = 0;
         };
@@ -527,9 +546,10 @@ class Asteroid extends PhysicsObject {
     }
     ScoredHit(){
         gameManager.currentScore += this.asteroidScores[this.level];
-        if(this.level === (1 || 2)){
-            gameObjects.push(new Asteroid(this.x - 5, this.y -5, this.level+1));
-            gameObjects.push(new Asteroid(this.x + 5, this.y + 5, this.level+1));
+        if(this.level === 1 || this.level === 2){
+            const spawnLevel = this.level+1;
+            gameObjects.push(new Asteroid(this.x - 5, this.y -5, spawnLevel));
+            gameObjects.push(new Asteroid(this.x + 5, this.y + 5, spawnLevel));
         }
         var i = gameObjects.indexOf(this);
         return gameObjects.splice(i,1);
