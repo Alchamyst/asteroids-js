@@ -62,7 +62,7 @@ function gameLoop(timeStamp) {
     window.requestAnimationFrame(gameLoop);
 }
 
-function detectCollisions(){
+const detectCollisions = () => {
     let obj1;
     let obj2;
 
@@ -87,11 +87,16 @@ function detectCollisions(){
                         obj1.isColliding = true;
                             
                         if ((obj1 instanceof Bullet || obj2 instanceof Bullet) && (obj1 instanceof Asteroid || obj2 instanceof Asteroid)){
-                            if(obj1 instanceof Asteroid){
-                                obj1.handleBullethit
+                            if(obj1 instanceof Asteroid) {
+                                obj2.Remove();
+                                obj1.ScoredHit(); 
+                            }
+
+                            if(obj2 instanceof Asteroid) {
+                                obj1.Remove();
+                                obj2.ScoredHit();
                             }
                             console.log(`Asteroid was shot!`);
-                            // the asteroid and bullet must both be destroyed
                         }
                     }
                 }
@@ -169,6 +174,17 @@ class GameManager {
             }
         }
         gameObjects.push(new GameMsg('GAME OVER','Press Enter To Try Again'));
+    }
+    ShipDestroyed(){
+        this.currentLives -= 1;
+        if(this.currentLives == 0) return this.GameOver();
+
+        for(let i=0; i < gameObjects.length; i++) {
+            if(gameObjects[i] instanceof Ship){
+                gameObjects.splice(i,1);
+            }
+        }
+        gameObjects.push(new Ship());
     }
     SpawnAsteroids(amount){
         for(let i = 0; i < amount; i++){
@@ -262,6 +278,11 @@ class GameMsg extends HudElement {
     }
 }
 
+// ctx.clearRect(0,0, canvasWidth, canvasHeight);
+// ctx.fillStyle = 'white';
+// ctx.font = '20px Arial';
+// ctx.fillText('SCORE: ' + score.toString(), 20, 35);
+
 class LivesCounter extends HudElement {
     constructor(){
         super(1175, 10);     
@@ -339,25 +360,25 @@ class Ship extends PhysicsObject {
         this.shieldTimer = 3;
 
         this.bulletTimer = 0;
-        this.bulletFireRate = 0.25;
+        this.bulletFireRate = 0.4;
     }
     Update(secondsPassed){
         super.Update();
 
-        if(this.isColliding == true && this.shieldTimer == 0){
-            gameManager.currentLives -= 1;
+        // if(this.isColliding == true && this.shieldTimer == 0){
+        //     gameManager.currentLives -= 1;
 
-            if(gameManager.currentLives == 0) return gameManager.GameOver();
+        //     if(gameManager.currentLives == 0) return gameManager.GameOver();
 
-            this.x = canvasWidth / 2;
-            this.y = canvasHeight / 2;
-            this.velocityX = 0;
-            this.velocityY = 0;
-            this.movingForward = false;
-            this.dirModifier = 0;
-            this.shieldTimer = 3;
-            return
-        }
+        //     this.x = canvasWidth / 2;
+        //     this.y = canvasHeight / 2;
+        //     this.velocityX = 0;
+        //     this.velocityY = 0;
+        //     this.movingForward = false;
+        //     this.dirModifier = 0;
+        //     this.shieldTimer = 3;
+        //     return
+        // }
 
         this.bulletTimer += secondsPassed;
 
@@ -389,8 +410,8 @@ class Ship extends PhysicsObject {
         if(this.y > canvas.height) this.y = this.radius; 
 
         // Reduce velocity. Imposes speed cap.
-        this.velocityX *= Math.pow(0.99, secondsPassed);
-        this.velocityY *= Math.pow(0.99, secondsPassed);
+        this.velocityX *= Math.pow(0.5, secondsPassed);
+        this.velocityY *= Math.pow(0.5, secondsPassed);
         // this.velocityX *= 0.99;
         // this.velocityY *= 0.99;
 
@@ -443,17 +464,24 @@ class Bullet extends PhysicsObject {
         this.collisionRadius = 3;
         this.height = 4;
         this.width = 4;
-        this.speed = 750;
+        this.speed = 1000;
         this.velocityX = 0;
         this.velocityY = 0;
     }
+    Remove(){
+        var i = gameObjects.indexOf(this);
+        return gameObjects.splice(i,1);
+    }
     Update(){
         super.Update();
-        // console.log(`Bullet loc: ${this.x}, ${this.y}`);
 
         var radians = this.angle / Math.PI * 180;
         this.x -= Math.cos(radians) * this.speed * secondsPassed;
         this.y -= Math.sin(radians) * this.speed * secondsPassed;
+
+        if(this.x < -25 || this.y < -25 || this.x > canvas.width +25 || this.y > canvas.height +25){
+            this.Remove();
+        }
     }
     Render(){
         super.Render();
@@ -464,19 +492,47 @@ class Bullet extends PhysicsObject {
 }
 
 class Asteroid extends PhysicsObject {
-    constructor(startX, startY, level, speed, radius, collisionRadius){
+    constructor(startX, startY, level, speed){
         super();
         this.x = startX || Math.floor(Math.random() * canvasWidth);
         this.y = startY || Math.floor(Math.random() * canvasHeight);
-        this.speed = speed || 200;
-        this.radius = radius || 50;
-        this.angle = Math.floor(Math.random() * 328); // this affects our rotation of sprite. Will be what should change over time for spinning asteroids.
+
+        this.angle = Math.floor(Math.random() * 328);
         this.strokeColor = 'white';
-        this.collisionRadius = collisionRadius || 46;
+
+        this.asteroidSizes = {
+            1: 50,
+            2: 25,
+            3: 15
+        }
+        this.asteroidCollisions = {
+            1: 46,
+            2: 22,
+            3: 12
+        }
+        this.asteroidSpeeds = {
+            1: 200,
+            2: 250,
+            3: 300
+        }
+        this.asteroidScores = {
+            1: 5,
+            2: 7,
+            3: 9
+        }
         this.level = level || 1;
+        this.speed = this.asteroidSpeeds[level] || 200;
+        this.radius = this.asteroidSizes[level] || 50;
+        this.collisionRadius = this.asteroidCollisions[level] || 46;
     }
     ScoredHit(){
-        // gameObjects.splice(i,1);
+        gameManager.currentScore += this.asteroidScores[this.level];
+        if(this.level === (1 || 2)){
+            gameObjects.push(new Asteroid(this.x - 5, this.y -5, this.level+1));
+            gameObjects.push(new Asteroid(this.x + 5, this.y + 5, this.level+1));
+        }
+        var i = gameObjects.indexOf(this);
+        return gameObjects.splice(i,1);
     }
     Update(){
         super.Update();
@@ -506,67 +562,3 @@ class Asteroid extends PhysicsObject {
         context.stroke();
     }
 }
-
-
-// class Asteroid extends PhysicsObject {
-//     constructor(ctx, x, startY, level, collisionRadius){
-//         super(ctx);
-//         this.x = x || Math.floor(Math.random() * canvasWidth);
-//         this.y = y || Math.floor(Math.random() * canvasHeight);
-//         this.speed = 10;
-//         this.rotateSpeed = 0.075;
-//         this.radius = 15;
-//         // this.collisionRadius = 11;
-//         this.dirModifier = 0;
-//         this.angle = 0;
-//         this.strokeColor = 'white';
-//         this.noseX = canvasWidth / 2 + 15;
-//         this.noseY = canvasHeight / 2;
-//         this.movingForward = false;
-//     }
-// }
-
-
-
-// class Asteroid {
-//     constructor(x,y,radius, level,collisionRadius){
-//         this.visible = true;
-//         this.x = x || Math.floor(Math.random() * canvasWidth);
-//         this.y = y || Math.floor(Math.random() * canvasHeight);
-//         this.speed = 1.25;
-//         // this.speed = 0;
-//         this.radius = radius || 50;
-//         this.angle = Math.floor(Math.random() * 359);
-//         this.strokeColor = 'white';
-//         this.collisionRadius = collisionRadius || 46;
-//         this.level = level || 1;
-//     }
-//     Update(){
-//         var radians = this.angle / Math.PI * 180;
-//         this.x += Math.cos(radians) * this.speed;
-//         this.y += Math.sin(radians) * this.speed;
-//         if(this.x < (this.radius/2)){
-//             this.x = canvas.width;
-//         }
-//         if(this.x > canvas.width){
-//             this.x = this.radius;
-//         }
-//         if(this.y < (this.radius/2)){
-//             this.y = canvas.height;
-//         }
-//         if(this.y > canvas.height){
-//             this.y = this.radius;
-//         }
-//     }
-//     Draw(){
-//         ctx.strokeStyle = this.strokeColor;
-//         ctx.beginPath();
-//         let vertAngle = ((Math.PI * 2) / 6);
-//         var radians = this.angle / Math.PI * 180;
-//         for(let i = 0; i < 6; i++){
-//             ctx.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
-//         }
-//         ctx.closePath();
-//         ctx.stroke();
-//     }
-// }
