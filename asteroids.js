@@ -382,7 +382,7 @@ class Ship extends PhysicsObject {
         this.shieldTimer = 3;
 
         this.bulletTimer = 0;
-        this.bulletFireRate = 0.4;
+        this.bulletFireDelay = 0.2;
     }
     Update(secondsPassed){
         super.Update();
@@ -409,7 +409,7 @@ class Ship extends PhysicsObject {
         this.dirModifier = 0;
         if(inputManager.actions.leftButton) this.dirModifier = -1;
         if(inputManager.actions.rightButton) this.dirModifier = 1;
-        if(inputManager.actions.fireButton && this.bulletTimer >= this.bulletFireRate){
+        if(inputManager.actions.fireButton && this.bulletTimer >= this.bulletFireDelay){
             gameObjects.push(new Bullet(this.noseX, this.noseY, this.angle));
             this.bulletTimer = 0;
         };
@@ -531,8 +531,8 @@ class Asteroid extends PhysicsObject {
         }
         this.asteroidSpeeds = {
             1: 200,
-            2: 250,
-            3: 300
+            2: 240,
+            3: 275
         }
         this.asteroidScores = {
             1: 5,
