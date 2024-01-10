@@ -403,12 +403,13 @@ class Ship extends PhysicsObject {
         this.movingForward = false;
         this.wasMovingForward = false;
 
-        this.shieldTimer = 2;
+        // this.shieldTimer = 2;
+        this.shieldTimer = 1000;
 
         this.shieldSoundEffect = audioManager.CreateSound('shieldDown');
         this.shipExplodeSoundEffect = audioManager.CreateSound('shipExplode');
         this.shipRespawnSoundEffect = audioManager.CreateSound('shipRespawn');
-        this.thrusterSoundEffect = audioManager.CreateSound('shipThrusters');
+        this.thrusterSoundEffect = audioManager.CreateSound('shipThrusters', true);
 
 
         this.bulletTimer = 0;
@@ -649,8 +650,8 @@ class AudioManager {
     ToggleAudioEnabled(enabled = this.isAudioEnabled ? false : true){
         this.isAudioEnabled = enabled;
     }
-    CreateSound(soundEffect){
-        const newSound = new Sound(soundEffect);
+    CreateSound(soundEffect, loop = false){
+        const newSound = new Sound(soundEffect, loop);
         this.audioPlayers.push(newSound);
         return newSound;
     } 
@@ -675,13 +676,14 @@ class AudioManager {
 }
 
 class Sound {
-    constructor(soundEffect) {
+    constructor(soundEffect, loop = false) {
         this.sound = new Audio(sfx[soundEffect].soundFile);
         this.sound.setAttribute("preload", "auto");
         this.sound.setAttribute("controls", "none");
         this.sound.style.display = "none";
         document.body.appendChild(this.sound);
         this.SetVolume(sfx[soundEffect].volPercent);
+        this.sound.loop = loop;
     }
     SetVolume(volPercent) {
         if (volPercent >= 0 && volPercent <= 100) {
