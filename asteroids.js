@@ -8,6 +8,7 @@ let oldTimeStamp = 0;
 let fps;
 let hud;
 
+let audioManager;
 let gameManager;
 let inputManager;
 let gameObjects = [];
@@ -31,8 +32,10 @@ function init(){
     canvas.height = canvasHeight;
     clearScreen();
 
+    
     gameManager = new GameManager;
     inputManager = new InputManager;
+    audioManager = new AudioManager;
     // soundManager = new SoundManager();
     document.body.addEventListener("keydown", (e) => {inputManager.KeyDown(e.keyCode)});
     document.body.addEventListener("keyup", (e) => {inputManager.KeyUp(e.keyCode)});
@@ -150,7 +153,8 @@ class GameManager {
         gameObjects.push(new LivesCounter());
         gameObjects.push(new ScoreCounter());
         gameObjects.push(new GameMsg('Asteroids','Press Enter To Start'));
-        this.gameOverSound = new SoundManager('gameOver'); // Must be initialised outside of contructor due to reliance on gameManager.isSoundEnabled within the SoundManager.
+        // this.gameOverSound = new SoundManager('gameOver'); // Must be initialised outside of contructor due to reliance on gameManager.isSoundEnabled within the SoundManager.
+        this.gameOverSound = audioManager.CreateSound('gameOver'); // Must be initialised outside of contructor due to reliance on gameManager.isSoundEnabled within the SoundManager.
         this.SpawnAsteroids(10);
     }
     CheckGameState(){
@@ -191,7 +195,7 @@ class GameManager {
                 gameObjects.splice(i,1);
             }
         }
-        this.gameOverSound.PlaySound();
+        this.gameOverSound.Play();
         gameObjects.push(new GameMsg('GAME OVER','Press Enter To Try Again'));
     }
     ShipDestroyed(){
@@ -401,10 +405,10 @@ class Ship extends PhysicsObject {
 
         this.shieldTimer = 2;
 
-        this.shieldSoundEffect = new SoundManager('shieldDown');
-        this.shipExplodeSoundEffect = new SoundManager('shipExplode');
-        this.shipRespawnSoundEffect = new SoundManager('shipRespawn');
-        this.thrusterSoundEffect = new SoundManager('shipThrusters');
+        this.shieldSoundEffect = audioManager.CreateSound('shieldDown');
+        this.shipExplodeSoundEffect = audioManager.CreateSound('shipExplode');
+        this.shipRespawnSoundEffect = audioManager.CreateSound('shipRespawn');
+        this.thrusterSoundEffect = audioManager.CreateSound('shipThrusters');
 
 
         this.bulletTimer = 0;
@@ -417,7 +421,7 @@ class Ship extends PhysicsObject {
         if(this.respawnTimer > 0) return; // Do not run updates if waiting to respawn.
 
         if(!this.hasRespawned){
-            this.shipRespawnSoundEffect.PlaySound();
+            this.shipRespawnSoundEffect.Play();
             this.hasRespawned = true;
         }
 
@@ -426,8 +430,11 @@ class Ship extends PhysicsObject {
 
         if(this.isColliding == true && this.shieldTimer == 0){
 
-            this.shipExplodeSoundEffect.PlaySound();
-            this.thrusterSoundEffect.StopSound();
+            this.shipExplodeSoundEffect.Play();
+            this.thrusterSoundEffect.Stop();
+
+            audioManager.CleanUp(this.shipExplodeSoundEffect);
+            audioManager.CleanUp(this.thrusterSoundEffect);
             
             return gameManager.ShipDestroyed();
         }
@@ -454,7 +461,7 @@ class Ship extends PhysicsObject {
         }
         // Check if the moving forward state has changes since last update, and update the sounds. 
         if(this.wasMovingForward !== this.movingForward){
-            this.movingForward ? this.thrusterSoundEffect.PlaySound('shipThrusters') : this.thrusterSoundEffect.StopSound('shipThrusters');
+            this.movingForward ? this.thrusterSoundEffect.Play('shipThrusters') : this.thrusterSoundEffect.Stop('shipThrusters');
         }
 
         // Move the ship to the other side of the screen if we move out of bounds.
@@ -475,7 +482,7 @@ class Ship extends PhysicsObject {
         let previouShieldTimer = this.shieldTimer;
         this.shieldTimer = Math.max(0, this.shieldTimer - secondsPassed);
         if(previouShieldTimer > this.shieldTimer && this.shieldTimer === 0){
-            this.shieldSoundEffect.PlaySound();
+            this.shieldSoundEffect.Play();
         }
     }
     Render(){
@@ -525,11 +532,12 @@ class Bullet extends PhysicsObject {
         this.speed = 2000;
         this.velocityX = 0;
         this.velocityY = 0;
-        this.bulletSoundEffect = new SoundManager('shootBullet');
+        this.bulletSoundEffect = audioManager.CreateSound('shootBullet');
         this.soundPlayed = false;
         
     }
     Remove(){
+        audioManager.CleanUp(this.bulletSoundEffect);
         var i = gameObjects.indexOf(this);
         return gameObjects.splice(i,1);
     }
@@ -537,7 +545,7 @@ class Bullet extends PhysicsObject {
         super.Update();
 
         if(!this.soundPlayed){
-            this.bulletSoundEffect.PlaySound();
+            this.bulletSoundEffect.Play();
             this.soundPlayed = true;
         }
         var radians = this.angle / Math.PI * 180;
@@ -565,7 +573,7 @@ class Asteroid extends PhysicsObject {
         this.angle = Math.floor(Math.random() * 328);
         this.strokeColor = 'white';
 
-        this.ShotSoundEffect = new SoundManager('asteroidExplode');
+        this.ShotSoundEffect = audioManager.CreateSound('asteroidExplode');
 
         this.asteroidSizes = {
             1: 50,
@@ -594,12 +602,13 @@ class Asteroid extends PhysicsObject {
     }
     ScoredHit(){
         gameManager.currentScore += this.asteroidScores[this.level];
-        this.ShotSoundEffect.PlaySound();
+        this.ShotSoundEffect.Play();
         if(this.level === 1 || this.level === 2){
             const spawnLevel = this.level+1;
             gameObjects.push(new Asteroid(this.x - 5, this.y -5, spawnLevel));
             gameObjects.push(new Asteroid(this.x + 5, this.y + 5, spawnLevel));
         }
+        audioManager.CleanUp(this.ShotSoundEffect);
         var i = gameObjects.indexOf(this);
         return gameObjects.splice(i,1);
     }
@@ -632,46 +641,103 @@ class Asteroid extends PhysicsObject {
     }
 }
 
-
-class SoundManager {
-    constructor(soundEffect){
+class AudioManager {
+    constructor(){
+        this.audioPlayers = [];
         this.isAudioEnabled = gameManager.isSoundEnabled;
-        this.sound = new sound(sfx[soundEffect].soundFile, sfx[soundEffect].volPercent)
     }
-    PlaySound(){
-        if(this.isAudioEnabled){
-            this.sound.play();
-        }
+    ToggleAudioEnabled(enabled = this.isAudioEnabled ? false : true){
+        this.isAudioEnabled = enabled;
     }
-    StopSound(){
-        if(this.isAudioEnabled){
-            this.sound.stop();
-        }
+    CreateSound(soundEffect){
+        const newSound = new Sound(soundEffect);
+        this.audioPlayers.push(newSound);
+        return newSound;
+    } 
+    CleanUp(soundInstance){
+        if (soundInstance instanceof Sound) {
+            // soundInstance.Stop();
+            soundInstance.Remove();
+
+            const i = this.audioPlayers.indexOf(soundInstance);
+            if (i !== -1) {
+                this.audioPlayers.splice(i, 1);
+            }
+        } else console.log("CleanUp Failed: Not an instanceof Sound.")
     }
+    // CleanUpAll(){
+    //     for (const soundInstance of this.audioPlayers) {
+    //         // soundInstance.Stop();
+    //         soundInstance.Remove();
+    //     }
+    //     this.audioPlayers = [];
+    // }
 }
 
-function sound(src, volPercent = 100) {
-    this.sound = new Audio(src);
-    this.sound.setAttribute("preload", "auto");
-    this.sound.setAttribute("controls", "none");
-    this.sound.style.display = "none";
-    document.body.appendChild(this.sound);
-
-    this.setVolume = function (volPercent) {
+class Sound {
+    constructor(soundEffect) {
+        this.sound = new Audio(sfx[soundEffect].soundFile);
+        this.sound.setAttribute("preload", "auto");
+        this.sound.setAttribute("controls", "none");
+        this.sound.style.display = "none";
+        document.body.appendChild(this.sound);
+        this.SetVolume(sfx[soundEffect].volPercent);
+    }
+    SetVolume(volPercent) {
         if (volPercent >= 0 && volPercent <= 100) {
             this.sound.volume = volPercent / 100;
         } else {
             console.error('Invalid volume percentage. Please provide a value between 0 and 100.');
         }
-    };
-
-    this.play = function(){
-        this.setVolume(volPercent);
-        this.sound.play();
     }
-    this.stop = function(){
+    Play() {
+        if(audioManager.isAudioEnabled){
+            this.sound.play();
+        }
+    }
+    Stop() {
         this.sound.pause();
     }
+    Remove() {
+        if (this.sound) {
+            // Add an event listener for the 'ended' event
+            this.sound.addEventListener('ended', () => {
+                // Remove the element from the DOM after it has finished playing
+                if (this.sound && this.sound.parentNode) {
+                    this.sound.parentNode.removeChild(this.sound);
+                }
+            });
 
-    
+            // Stop the sound to trigger the 'ended' event
+            // this.sound.pause();
+            // this.sound.currentTime = 0;
+        }
+    }
 }
+
+// function sound(src, volPercent = 100) {
+//     this.sound = new Audio(src); 
+//     this.sound.setAttribute("preload", "auto");
+//     this.sound.setAttribute("controls", "none");
+//     this.sound.style.display = "none";
+//     document.body.appendChild(this.sound);
+
+//     this.setVolume = function (volPercent) {
+//         if (volPercent >= 0 && volPercent <= 100) {
+//             this.sound.volume = volPercent / 100;
+//         } else {
+//             console.error('Invalid volume percentage. Please provide a value between 0 and 100.');
+//         }
+//     };
+
+//     audioManager.AddPlayer(this.sound);
+//     audioManager.Count();
+
+//     this.play = function(){
+//         this.setVolume(volPercent);
+//         this.sound.play();
+//     }
+//     this.stop = function(){
+//         this.sound.pause();
+//     }   
+// }
