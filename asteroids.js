@@ -1,3 +1,8 @@
+// debug settings
+const debugHud = false;
+const debugShields = false;
+const renderCollision = false;
+
 const canvasWidth = 1200;
 const canvasHeight = 800;
 let canvas;
@@ -6,11 +11,6 @@ let context;
 let secondsPassed = 0;
 let oldTimeStamp = 0;
 let fps;
-let hud;
-
-// debug settings
-let debugHud = false;
-let debugShields = false;
 
 let audioManager;
 let gameManager;
@@ -35,16 +35,12 @@ function init(){
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     clearScreen();
-
-    
     gameManager = new GameManager;
     inputManager = new InputManager;
     audioManager = new AudioManager;
     document.body.addEventListener("keydown", (e) => {inputManager.KeyDown(e.keyCode)});
     document.body.addEventListener("keyup", (e) => {inputManager.KeyUp(e.keyCode)});
-
     gameManager.Init();
-
     window.requestAnimationFrame(gameLoop);
 }
 
@@ -53,14 +49,10 @@ function clearScreen(){
     context.fillRect(0,0,canvasWidth,canvasHeight); 
 }
 
-
 function gameLoop(timeStamp) {
     secondsPassed = (timeStamp - oldTimeStamp) / 1000;
     oldTimeStamp = timeStamp;
-
-    // Calculate fps
     fps = Math.round(1 / secondsPassed);
-
     clearScreen();
 
     // Loop over all game objects and update.
@@ -105,7 +97,7 @@ const detectCollisions = () => {
                         if ((obj1 instanceof Bullet || obj2 instanceof Bullet) && (obj1 instanceof Ship || obj2 instanceof Ship)) return;
 
                         obj1.isColliding = true;
-                        obj1.isColliding = true;
+                        obj2.isColliding = true;
                         
                         if ((obj1 instanceof Bullet || obj2 instanceof Bullet) && (obj1 instanceof Asteroid || obj2 instanceof Asteroid)){
                             if(obj1 instanceof Asteroid) {
@@ -134,16 +126,12 @@ function circleIntersect(x1, y1, r1, x2, y2, r2){
 }
 
 function removeInstances(itemType){
-    for (let i = gameObjects.length - 1; i >= 0; i--) {
-        if (gameObjects[i] instanceof itemType) {
-            gameObjects.splice(i, 1);
-        }
-    }   
+    gameObjects = gameObjects.filter(item => !(item instanceof itemType)); 
 }
 
 class GameManager {
     constructor(){
-        this.gameState = 'START'; // START, RUNNING, PAUSE, GAME_OVER
+        this.gameState = 'START';
         this.currentLevel = 1;
         this.currentLives = 0;
         this.currentScore = 0;
@@ -161,9 +149,9 @@ class GameManager {
     }
     Init(){
         // Create HUD & Some Asteroids
+        if(debugHud) gameObjects.push(new DebugHUD());
         gameObjects.push(new LivesCounter());
         gameObjects.push(new ScoreCounter());
-        if(debugHud) gameObjects.push(new DebugHUD());
         gameObjects.push(new GameMsg('Asteroids','Press Enter To Start'));
         this.gameOverSound = audioManager.CreateSound('gameOver'); // Must be initialised outside of contructor due to reliance on gameManager.isSoundEnabled within the SoundManager.
         this.SpawnAsteroids(10);
@@ -186,9 +174,6 @@ class GameManager {
                         return this.GameOver();
                     }
                     this.LevelComplete();
-                }
-                if(debugShields){
-
                 }
                 break;
 
@@ -220,7 +205,7 @@ class GameManager {
         this.gameState = 'LEVEL_COMPLETE'; 
         removeInstances(Ship);
         this.AddScore(this.currentLives * this.bonusLivesScore);
-        gameObjects.push(new GameMsg(`LEVEL ${this.currentLevel} COMPLETE`,`Press Enter To Continue.`));
+        gameObjects.push(new GameMsg(`LEVEL ${this.currentLevel} COMPLETE`,'Press Enter To Continue.'));
     }
     NextLevel(){
         this.gameState = 'LEVEL_SETUP';  
@@ -244,11 +229,7 @@ class GameManager {
         this.currentLives -= 1;
         if(this.currentLives <= 0) return this.GameOver();
 
-        for(let i=0; i < gameObjects.length; i++) {
-            if(gameObjects[i] instanceof Ship){
-                gameObjects.splice(i,1);
-            }
-        }
+        removeInstances(Ship);
         gameObjects.push(new Ship(2));
     }
     LevelSetup(){
@@ -292,36 +273,18 @@ class InputManager {
         }
     }
     KeyDown(keyCode){
-        // UpArrow or W key pressed.
-        if(keyCode === 38 || keyCode == 87) this.actions.forwardButton = true;
-
-        // LeftArrow or A key pressed.
-        if(keyCode === 37 || keyCode == 65) this.actions.leftButton = true;
-
-        // RightArrow or D key pressed.
-        if(keyCode === 39 || keyCode == 68) this.actions.rightButton = true; 
-
-        // Spacebar key pressed.
-        if(keyCode === 32) this.actions.fireButton = true;
-
-        // Enter key pressed.
-        if(keyCode === 13) this.actions.startButton = true;
+        if(keyCode === 38 || keyCode == 87) this.actions.forwardButton = true; // UpArrow or W key pressed.
+        if(keyCode === 37 || keyCode == 65) this.actions.leftButton = true; // LeftArrow or A key pressed.
+        if(keyCode === 39 || keyCode == 68) this.actions.rightButton = true; // RightArrow or D key pressed.
+        if(keyCode === 32) this.actions.fireButton = true; // Spacebar key pressed.
+        if(keyCode === 13) this.actions.startButton = true; // Enter key pressed.
     }
     KeyUp(keyCode){
-        // UpArrow or W key pressed.
-        if(keyCode === 38 || keyCode === 87) this.actions.forwardButton = false;
-
-        // LeftArrow or A key pressed.
-        if(keyCode === 37 || keyCode === 65) this.actions.leftButton = false;
-
-        // RightArrow or D key pressed.
-        if(keyCode === 39 || keyCode === 68) this.actions.rightButton = false;
-
-        // Spacebar key pressed.
-        if(keyCode === 32) this.actions.fireButton = false;
-
-        // Enter key pressed.
-        if(keyCode === 13) this.actions.startButton = false;
+        if(keyCode === 38 || keyCode === 87) this.actions.forwardButton = false; // UpArrow or W key pressed.
+        if(keyCode === 37 || keyCode === 65) this.actions.leftButton = false; // LeftArrow or A key pressed.   
+        if(keyCode === 39 || keyCode === 68) this.actions.rightButton = false; // RightArrow or D key pressed.
+        if(keyCode === 32) this.actions.fireButton = false; // Spacebar key pressed.
+        if(keyCode === 13) this.actions.startButton = false; // Enter key pressed.
     }
 }
 
@@ -331,10 +294,8 @@ class GameObject {
         this.y = y;
     }
     Update(){
-
     }
     Render(){
-
     }
 }
 
@@ -355,7 +316,6 @@ class GameMsg extends HudElement {
         this.shouldClose = false;
     }
     Update(){
-
     }
     Render(){
         context.fillStyle = this.color;
@@ -370,21 +330,21 @@ class DebugHUD extends HudElement {
     constructor(){
         super(canvasWidth-10, canvasHeight-10); 
         this.font = '25px Arial';  
-        this.fpsOutput = "FPS: " + fps;
+        this.fpsOutput = "FPS: ";
         this.gameState = "GameState: " + gameManager.gameState;
         this.asteroidsOutput = "Asteroids: " + gameManager.currentAsteroids;
     }
     Update(){
-        // this.fpsOutput = "FPS: " + fps;
         this.gameState = "GameState: " + gameManager.gameState;
         this.asteroidsOutput = "Asteroids: " + gameManager.currentAsteroids;
+        this.fpsOutput = "FPS: " + fps;
     }
     Render(){
         context.font = this.font;
         context.fillStyle = this.color;
-        // context.fillText(this.fpsOutput, this.x - context.measureText(this.fpsOutput).width, this.y);
         context.fillText(this.gameState, this.x - context.measureText(this.gameState).width, this.y); 
         context.fillText(this.asteroidsOutput, this.x - context.measureText(this.asteroidsOutput).width, this.y - 30);    
+        context.fillText(this.fpsOutput, this.x - context.measureText(this.fpsOutput).width, this.y -60);
     }
 }
 
@@ -398,18 +358,11 @@ class ScoreCounter extends HudElement {
     }
     Render(){
         context.strokeStyle = this.color;
-
-        // context.clearRect(0,0, canvasWidth, canvasHeight);
         context.fillStyle = 'white';
         context.font = '20px Arial';
         context.fillText('SCORE: ' + this.score.toString(), 20, 35);
     }
 }    
-
-// ctx.clearRect(0,0, canvasWidth, canvasHeight);
-// ctx.fillStyle = 'white';
-// ctx.font = '20px Arial';
-// ctx.fillText('SCORE: ' + score.toString(), 20, 35);
 
 class LivesCounter extends HudElement {
     constructor(){
@@ -438,14 +391,13 @@ class LivesCounter extends HudElement {
     }
 }
 
-
 class PhysicsObject extends GameObject {
     constructor(x, y, velocityX, velocityY, collisionRadius){
         super(x, y);
         this.velocityX = velocityX;
         this.velocityY = velocityY;
         this.collisionRadius = collisionRadius;
-        this.renderCollision = false; // Useful for debugging.
+        this.renderCollision = renderCollision || false; // Useful for debugging.
         this.isColliding = false; 
     }
     Update(){
@@ -463,43 +415,43 @@ class PhysicsObject extends GameObject {
 
 class Ship extends PhysicsObject {
     constructor(respawnTimer = 0){
-        super(canvasWidth / 2 , canvasHeight / 2, 0, 0, 11);
+        const x = canvasWidth / 2;
+        const y = canvasHeight / 2
+        const velocityX = 0;
+        const velocityY = 0;
+        const collisionRadius = 11;
 
-        this.respawnTimer = respawnTimer;
+        super(x, y, velocityX, velocityY, collisionRadius);
 
+        this.radius = 15;
         this.speed = 10;
         this.rotateSpeed = 0.1;
-        this.radius = 15;
-        // this.collisionRadius = 11;
-        this.dirModifier = 0;
-        this.angle = Math.random();
-        this.strokeColor = 'white';
-        this.noseX = canvasWidth / 2 + 15;
-        this.noseY = canvasHeight / 2;
-        this.movingForward = false;
-        this.wasMovingForward = false;
-
         this.shieldTimer = 2;
-        // this.shieldTimer = 2000;
+        this.bulletTimer = 0;
+        this.bulletFireDelay = 0.2;
 
         this.shieldSoundEffect = audioManager.CreateSound('shieldDown');
         this.shipExplodeSoundEffect = audioManager.CreateSound('shipExplode');
         this.shipRespawnSoundEffect = audioManager.CreateSound('shipRespawn');
         this.thrusterSoundEffect = audioManager.CreateSound('shipThrusters', true);
 
+        this.strokeColor = 'white';
+
+        this.noseX = x + 15;
+        this.noseY = y;
+        this.angle = Math.random();
+        this.dirModifier = 0;
+        this.respawnTimer = respawnTimer;
+        this.movingForward = false;
+        this.wasMovingForward = false;
+
         this.jetX = this.x;
         this.jetY = this.y;
-        this.jetAngle = this.angle;
         this.jetEmitter = new JetEmitter(this.jetX, this.jetY, this.jetAngle);
         gameObjects.push(this.jetEmitter);
-
-        this.bulletTimer = 0;
-        this.bulletFireDelay = 0.2;
     }
     Update(secondsPassed){
-
-        // Reduce respawn timer.
-        this.respawnTimer = Math.max(0, this.respawnTimer - secondsPassed);
+        this.respawnTimer = Math.max(0, this.respawnTimer - secondsPassed); // Tick respawn timer.
         if(this.respawnTimer > 0) return; // Do not run updates if waiting to respawn.
 
         if(!this.hasRespawned){
@@ -511,21 +463,12 @@ class Ship extends PhysicsObject {
 
         if(debugShields) this.shieldTimer = 5;
 
+        // If the shield is down, take has hit something and doesn't have a shield up
         if(this.isColliding == true && this.shieldTimer == 0){
-
-            this.shipExplodeSoundEffect.Play();
-            this.thrusterSoundEffect.Stop();
-
-            // gameObjects.push(new Explosion(this.x, this.y, 50, 1.5, 'silver', 2));
-            gameObjects.push(new ShipExplosion(this.x, this.y));
-
-            audioManager.CleanUp(this.shipExplodeSoundEffect);
-            audioManager.CleanUp(this.thrusterSoundEffect);
-
-            this.jetEmitter.Destroy();
-            return gameManager.ShipDestroyed();
+            return this.ShipWasHit();
         }
 
+        // Tick bullet fire delay timer.
         this.bulletTimer += secondsPassed;
 
         // Check for inputs affecting ship actions.
@@ -568,17 +511,15 @@ class Ship extends PhysicsObject {
         this.velocityX *= Math.pow(0.5, secondsPassed);
         this.velocityY *= Math.pow(0.5, secondsPassed);
 
+        // Update rotation over time.
         this.angle += (this.rotateSpeed * this.dirModifier) * secondsPassed;
         this.x -= (this.velocityX * secondsPassed);
         this.y -= (this.velocityY * secondsPassed);
 
         // Update jetEmitter location.
-        // this.jetX = this.x;
-        // this.jetY = this.y;
         this.jetX = this.x + this.radius/2 * Math.cos(radians);
         this.jetY = this.y + this.radius/2 * Math.sin(radians);
-        this.jetAngle = this.angle;
-        this.jetEmitter.SetLocation(this.jetX, this.jetY, this.jetAngle, this.velocityX, this.velocityY); // TEST passing velocity of ship.
+        this.jetEmitter.SetLocation(this.jetX, this.jetY, this.velocityX, this.velocityY);
 
         // Reduce the shield timer.
         let previouShieldTimer = this.shieldTimer;
@@ -595,7 +536,6 @@ class Ship extends PhysicsObject {
         let vertAngle = ((Math.PI * 2) /3);
         let radians = this.angle / Math.PI * 180;
 
-
         // Render the main ship triangle.
         context.strokeStyle = this.strokeColor;
         context.beginPath();
@@ -604,7 +544,6 @@ class Ship extends PhysicsObject {
         }
         context.closePath();
         context.stroke();
-
 
         // Render front nose marker. 
         this.noseX = this.x - this.radius * Math.cos(radians);
@@ -625,6 +564,15 @@ class Ship extends PhysicsObject {
             context.stroke();
         }
     }
+    ShipWasHit(){
+        this.shipExplodeSoundEffect.Play();
+        this.thrusterSoundEffect.Stop();
+        gameObjects.push(new ShipExplosion(this.x, this.y));
+        audioManager.CleanUp(this.shipExplodeSoundEffect);
+        audioManager.CleanUp(this.thrusterSoundEffect);
+        this.jetEmitter.Destroy();
+        gameManager.ShipDestroyed();
+    }
 }
 
 class Bullet extends PhysicsObject {
@@ -639,8 +587,7 @@ class Bullet extends PhysicsObject {
         this.velocityX = 0;
         this.velocityY = 0;
         this.bulletSoundEffect = audioManager.CreateSound('shootBullet');
-        this.soundPlayed = false;
-        
+        this.soundPlayed = false;    
     }
     Remove(){
         audioManager.CleanUp(this.bulletSoundEffect);
@@ -707,8 +654,6 @@ class Asteroid extends PhysicsObject {
         this.strokeColor = 'white';
 
         this.renderRotation = 0;
-        // this.renderRotationSpeed = 2;
-        // this.renderRotationSpeed = Math.random() * 2 - 1;
 
         this.ShotSoundEffect = audioManager.CreateSound('asteroidExplode');
 
@@ -739,9 +684,8 @@ class Asteroid extends PhysicsObject {
         // Update the rendering rotation over time.
         this.renderRotation += this.renderRotationSpeed * secondsPassed;
 
-        // this.angle += 0.1 * secondsPassed;
+        // Update asteroid location over time.
         var radians = this.angle / Math.PI * 180;
-
         this.x += Math.cos(radians) * this.speed * secondsPassed;
         this.y += Math.sin(radians) * this.speed * secondsPassed;
 
@@ -783,7 +727,6 @@ class AudioManager {
     } 
     CleanUp(soundInstance){
         if (soundInstance instanceof Sound) {
-            // soundInstance.Stop();
             soundInstance.Remove();
 
             const i = this.audioPlayers.indexOf(soundInstance);
@@ -792,13 +735,6 @@ class AudioManager {
             }
         } else console.log("CleanUp Failed: Not an instanceof Sound.")
     }
-    // CleanUpAll(){
-    //     for (const soundInstance of this.audioPlayers) {
-    //         // soundInstance.Stop();
-    //         soundInstance.Remove();
-    //     }
-    //     this.audioPlayers = [];
-    // }
 }
 
 class Sound {
@@ -812,33 +748,36 @@ class Sound {
         this.sound.loop = loop;
     }
     SetVolume(volPercent) {
-        if (volPercent >= 0 && volPercent <= 100) {
-            this.sound.volume = volPercent / 100;
-        } else {
-            console.error('Invalid volume percentage. Please provide a value between 0 and 100.');
-        }
+        if (!(volPercent >= 0 && volPercent <= 100)) return console.error('Invalid volume percentage. Please provide a value between 0 and 100.');
+        this.sound.volume = volPercent / 100;
     }
     Play() {
         if(audioManager.isAudioEnabled){
-            this.sound.play();
+            try {
+                this.sound.play();
+            } catch(error){
+                console.error(`Error playing sound: ${error}`);
+            }
         }
     }
     Stop() {
         this.sound.pause();
     }
     Remove() {
-        if (this.sound) {
-            // Add an event listener for the 'ended' event
-            this.sound.addEventListener('ended', () => {
-                // Remove the element from the DOM after it has finished playing
-                if (this.sound && this.sound.parentNode) {
-                    this.sound.parentNode.removeChild(this.sound);
-                }
-            });
+        // Remove the element from the DOM after it has finished playing
+        try {
+            if (this.sound) {
+                this.sound.addEventListener('ended', () => {
+                    if (this.sound && this.sound.parentNode) {
+                        this.sound.parentNode.removeChild(this.sound);
+                    }
+                });
+            }
+        } catch (error){
+            console.error(`Error removing sound: ${error}`);
         }
     }
 }
-
 
 class Particle {
     constructor(x, y, color, velocityX, velocityY, size, lifespan) {
@@ -867,22 +806,16 @@ class Particle {
 }
 
 class JetEmitter {
-    constructor(x, y, angle) {
+    constructor(x, y) {
         this.particles = [];
-
         this.x = x;
         this.y = y;
-
         this.shouldEmit = false;
         this.particlesPerSec = 255;
         this.particleSize = 2;
         this.particleColor = 'orange';
         this.particleLifespan = 0.1;
         this.particleSpeedMultiplier = 0.25;
-
-        // this.angle = angle;
-        // this.speed = 0;
-
     }
     StartEmitting(){
         this.shouldEmit = true;
@@ -890,10 +823,9 @@ class JetEmitter {
     StopEmitting(){
         this.shouldEmit = false;
     }
-    SetLocation(x, y, angle, velX, velY){
+    SetLocation(x, y, velX, velY){
         this.x = x;
         this.y = y;
-        // this.angle = angle;
         this.velX = velX;
         this.velY = velY;
     }
@@ -901,8 +833,6 @@ class JetEmitter {
         if(this.shouldEmit){
             const particlesQty = Math.floor(this.particlesPerSec * secondsPassed); // This is affecting quality!
             for (let i = 0; i < particlesQty ; i++) {
-                // const velocityX = this.speed * Math.cos(this.angle); // TEST passing velocity of ship.
-                // const velocityY = this.speed * Math.sin(this.angle); // TEST passing velocity of ship.
                 const velocityX = this.velX;
                 const velocityY = this.velY 
                 const particle = new Particle(this.x, this.y, this.particleColor, velocityX * this.particleSpeedMultiplier, velocityY * this.particleSpeedMultiplier, this.particleSize, this.particleLifespan);
@@ -920,16 +850,11 @@ class JetEmitter {
         }
     }  
     Destroy(){
-        for(let i=0; i < gameObjects.length; i++) {
-            if(gameObjects[i] instanceof JetEmitter){
-                gameObjects.splice(i,1);
-            }
-        }
+        removeInstances(JetEmitter);
     }
 }
 
 class Explosion {
-    // constructor(x, y, particleCount, particleSize, color = 'white', lifespan) {
     constructor(x, y, particleCount = 10, particleSize = 1, colors = ['white'], particleLifespan) {
         this.x = x;
         this.y = y;
@@ -938,15 +863,6 @@ class Explosion {
         this.particleCount = particleCount;
         this.particleSize = particleSize;
         this.particleLifespan = particleLifespan
-
-        // for (let i = 0; i < particleCount; i++) {
-        //     const angle = Math.random() * 2 * Math.PI;
-        //     const speed = Math.random() * 500 + 100;
-        //     const velocityX = speed * Math.cos(angle);
-        //     const velocityY = speed * Math.sin(angle);
-        //     const particle = new Particle(x, y, color, velocityX, velocityY, particleSize, lifespan);
-        //     this.particles.push(particle);
-        // }
 
         for (let i = 0; i < this.particleCount; i++) {
             const angle = Math.random() * 2 * Math.PI;
@@ -976,10 +892,6 @@ class Explosion {
     }
 }
 
-
-//gameObjects.push(new Explosion(this.x, this.y, 50, 1.5, 'silver', 2));
-
-// SHIP EXPLOSION WILL HAVE RANDOMISED PARTICLE COLOURS FROM LIST.
 class ShipExplosion extends Explosion {
     constructor(x, y){
         const particleCount = 50;
@@ -994,17 +906,6 @@ class ShipExplosion extends Explosion {
             'pink',
             'rgba(0, 255, 255, 1)' // Shield color.
         ]
-
         super(x, y, particleCount, particleSize, colors, lifespan);
-
-        // for (let i = 0; i < this.particleCount; i++) {
-        //     const angle = Math.random() * 2 * Math.PI;
-        //     const speed = Math.random() * 500 + 100;
-        //     const velocityX = speed * Math.cos(angle);
-        //     const velocityY = speed * Math.sin(angle);
-        //     const particleColor = this.colors[Math.floor(Math.random() * this.colors.length)];
-        //     const particle = new Particle(x, y, particleColor, velocityX, velocityY, this.particleSize, this.lifespan);
-        //     this.particles.push(particle);
-        // }
     }
 }
