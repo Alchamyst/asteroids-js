@@ -146,15 +146,19 @@ class GameManager {
         this.currentLives = 0;
         this.currentScore = 0;
         this.currentAsteroids = 0;
-        // this.asteroidCount = 8;
+        this.bonusLivesScore = 25;
         this.isSoundEnabled = true;
         this.gameOverSound = 'gameOver';
+        // this.asteroidCount = {
+        //     1: { bigAsteroids: 6, mediumAsteroids: 0, smallAsteroids: 0 },
+        //     2: { bigAsteroids: 7, mediumAsteroids: 2, smallAsteroids: 0 },
+        //     3: { bigAsteroids: 8, mediumAsteroids: 4, smallAsteroids: 3 },
+        //     4: { bigAsteroids: 9, mediumAsteroids: 6, smallAsteroids: 6 },
+        //     5: { bigAsteroids: 10, mediumAsteroids: 8, smallAsteroids: 9 }
+        // }
         this.asteroidCount = {
-            1: { bigAsteroids: 6, mediumAsteroids: 0, smallAsteroids: 0 },
-            2: { bigAsteroids: 7, mediumAsteroids: 2, smallAsteroids: 0 },
-            3: { bigAsteroids: 8, mediumAsteroids: 4, smallAsteroids: 3 },
-            4: { bigAsteroids: 9, mediumAsteroids: 6, smallAsteroids: 6 },
-            5: { bigAsteroids: 10, mediumAsteroids: 8, smallAsteroids: 9 }
+            1: { bigAsteroids: 1, mediumAsteroids: 1, smallAsteroids: 1 },
+            2: { bigAsteroids: 2, mediumAsteroids: 2, smallAsteroids: 2 },
         }
     }
     Init(){
@@ -217,7 +221,8 @@ class GameManager {
     LevelComplete(){
         this.gameState = 'LEVEL_COMPLETE'; 
         removeInstances(Ship);
-        gameObjects.push(new GameMsg(`LEVEL ${this.currentLevel} COMPLETE`,`Press Enter To Try Level ${this.currentLevel+1}`));
+        this.AddScore(this.currentLives * this.bonusLivesScore);
+        gameObjects.push(new GameMsg(`LEVEL ${this.currentLevel} COMPLETE`,`Press Enter To Continue.`));
     }
     NextLevel(){
         this.gameState = 'LEVEL_SETUP';  
