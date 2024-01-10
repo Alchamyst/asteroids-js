@@ -141,19 +141,26 @@ function removeInstances(itemType){
 class GameManager {
     constructor(){
         this.gameState = 'START'; // START, RUNNING, PAUSE, GAME_OVER
+        this.currentLevel = 1;
         this.currentLives = 0;
         this.currentScore = 0;
-        this.asteroidCount = 8;
+        this.currentAsteroids = 0;
+        // this.asteroidCount = 8;
         this.isSoundEnabled = true;
         this.gameOverSound = 'gameOver';
+        this.asteroidCount = {
+            1: { bigAsteroids: 6, mediumAsteroids: 0, smallAsteroids: 0 },
+            2: { bigAsteroids: 7, mediumAsteroids: 2, smallAsteroids: 0 },
+            3: { bigAsteroids: 8, mediumAsteroids: 4, smallAsteroids: 3 },
+            4: { bigAsteroids: 9, mediumAsteroids: 6, smallAsteroids: 6 },
+            5: { bigAsteroids: 10, mediumAsteroids: 8, smallAsteroids: 9 }
+        }
     }
     Init(){
         // Create HUD & Some Asteroids
-        // gameObjects.push(new TimersHUD());
         gameObjects.push(new LivesCounter());
         gameObjects.push(new ScoreCounter());
         gameObjects.push(new GameMsg('Asteroids','Press Enter To Start'));
-        // this.gameOverSound = new SoundManager('gameOver'); // Must be initialised outside of contructor due to reliance on gameManager.isSoundEnabled within the SoundManager.
         this.gameOverSound = audioManager.CreateSound('gameOver'); // Must be initialised outside of contructor due to reliance on gameManager.isSoundEnabled within the SoundManager.
         this.SpawnAsteroids(10);
     }
@@ -166,7 +173,23 @@ class GameManager {
                 } 
                 break; 
 
-            case 'RUNNING':
+            case 'LEVEL_SETUP':
+                break;
+
+            case 'LEVEL_RUNNING':
+                if(this.currentAsteroids == 0){
+                    if(this.currentLevel == Object.keys(this.asteroidCount).length){
+                        return this.GameOver();
+                    }
+                    this.LevelComplete();
+                }
+                break;
+
+            case 'LEVEL_COMPLETE':
+                if(inputManager.actions.startButton){
+                    removeInstances(GameMsg);
+                    this.NextLevel();
+                } 
                 break;
 
             case 'GAME_OVER':
@@ -181,21 +204,29 @@ class GameManager {
         }
     }
     NewGame(){
-        this.gameState = 'RUNNING';
-        this.currentLives = 3;
+        this.gameState = 'LEVEL_SETUP';
+        this.currentLevel = 1;
         this.currentScore = 0;
-        removeInstances(Asteroid);
-        this.SpawnAsteroids(this.asteroidCount);
-        gameObjects.push(new Ship());
+        this.LevelSetup();
+    }
+    LevelComplete(){
+        this.gameState = 'LEVEL_COMPLETE'; 
+        removeInstances(Ship);
+        gameObjects.push(new GameMsg(`LEVEL ${this.currentLevel} COMPLETE`,`Press Enter To Try Level ${this.currentLevel+1}`));
+    }
+    NextLevel(){
+        this.gameState = 'LEVEL_SETUP';  
+        this.currentLevel += 1;
+        this.LevelSetup();
     }
     GameOver(){
-        this.gameState = 'GAME_OVER';
-        for(let i=0; i < gameObjects.length; i++) {
-            if(gameObjects[i] instanceof Ship){
-                gameObjects.splice(i,1);
-            }
+        removeInstances(Ship);
+        if(this.currentLevel == Object.keys(this.asteroidCount).length){
+            this.gameState = 'GAME_OVER';
+            return gameObjects.push(new GameMsg('GAME COMPLETE','Press Enter To Play Again'))
         }
         this.gameOverSound.Play();
+        this.gameState = 'GAME_OVER';
         gameObjects.push(new GameMsg('GAME OVER','Press Enter To Try Again'));
     }
     AddScore(points){
@@ -211,11 +242,30 @@ class GameManager {
             }
         }
         gameObjects.push(new Ship(2));
-}
-    SpawnAsteroids(amount){
+    }
+    LevelSetup(){
+        removeInstances(Asteroid);
+        removeInstances(Ship);
+
+        this.currentLives = 3;
+        this.currentAsteroids = 0;
+
+        this.SpawnAsteroids(this.asteroidCount[this.currentLevel].bigAsteroids, 1);
+        this.SpawnAsteroids(this.asteroidCount[this.currentLevel].mediumAsteroids, 2);
+        this.SpawnAsteroids(this.asteroidCount[this.currentLevel].smallAsteroids, 3);
+
+        gameObjects.push(new Ship());  
+        this.gameState = 'LEVEL_RUNNING'; 
+    }
+    SpawnAsteroids(amount, level = 1){
         for(let i = 0; i < amount; i++){
-            gameObjects.push(new Asteroid());
+            gameObjects.push(new Asteroid(level));
+            this.TrackAsteroids(1);
         }
+        
+    }
+    TrackAsteroids(qty){
+        this.currentAsteroids += qty;
     }
 }
 
@@ -331,6 +381,7 @@ class LivesCounter extends HudElement {
     constructor(){
         super(1175, 10);     
         this.lives = gameManager.currentLives;
+        this.color = 'lime';
     }
     Update(){
         this.lives = gameManager.currentLives;
@@ -399,7 +450,7 @@ class Ship extends PhysicsObject {
         this.radius = 15;
         // this.collisionRadius = 11;
         this.dirModifier = 0;
-        this.angle = 0;
+        this.angle = Math.random();
         this.strokeColor = 'white';
         this.noseX = canvasWidth / 2 + 15;
         this.noseY = canvasHeight / 2;
@@ -599,7 +650,7 @@ class Bullet extends PhysicsObject {
 }
 
 class Asteroid extends PhysicsObject {
-    constructor(startX, startY, level = 1){
+    constructor(level = 1, startX, startY){
         super();
 
         this.asteroidSizes = {
@@ -647,13 +698,15 @@ class Asteroid extends PhysicsObject {
         this.collisionRadius = this.asteroidCollisions[level] || 46;
     }
     ScoredHit(){
-        gameManager.AddScore(this.asteroidScores[this.level])
         this.ShotSoundEffect.Play();
+        gameManager.AddScore(this.asteroidScores[this.level]);
+        gameManager.TrackAsteroids(-1)
         gameObjects.push(new Explosion(this.x, this.y, 10, 2, 'brown', 1));
         if(this.level === 1 || this.level === 2){
             const spawnLevel = this.level+1;
-            gameObjects.push(new Asteroid(this.x - 5, this.y -5, spawnLevel));
-            gameObjects.push(new Asteroid(this.x + 5, this.y + 5, spawnLevel));
+            gameObjects.push(new Asteroid(spawnLevel, this.x - 5, this.y -5));
+            gameObjects.push(new Asteroid(spawnLevel, this.x + 5, this.y + 5));
+            gameManager.TrackAsteroids(2)
         }
         audioManager.CleanUp(this.ShotSoundEffect);
         var i = gameObjects.indexOf(this);
@@ -812,7 +865,6 @@ class Explosion {
         this.particles = this.particles.filter((particle) => particle.alpha > 0);
 
         if(this.particles.length == 0){
-            console.log("Explosion finished!");
             const i = gameObjects.indexOf(this);
             return gameObjects.splice(i,1);
         }
