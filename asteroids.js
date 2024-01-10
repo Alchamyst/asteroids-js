@@ -437,6 +437,8 @@ class Ship extends PhysicsObject {
             this.shipExplodeSoundEffect.Play();
             this.thrusterSoundEffect.Stop();
 
+            gameObjects.push(new Explosion(this.x, this.y, 50, 1.5, 'silver', 2));
+
             audioManager.CleanUp(this.shipExplodeSoundEffect);
             audioManager.CleanUp(this.thrusterSoundEffect);
             
@@ -647,6 +649,7 @@ class Asteroid extends PhysicsObject {
     ScoredHit(){
         gameManager.AddScore(this.asteroidScores[this.level])
         this.ShotSoundEffect.Play();
+        gameObjects.push(new Explosion(this.x, this.y, 10, 2, 'brown', 1));
         if(this.level === 1 || this.level === 2){
             const spawnLevel = this.level+1;
             gameObjects.push(new Asteroid(this.x - 5, this.y -5, spawnLevel));
@@ -758,6 +761,65 @@ class Sound {
                     this.sound.parentNode.removeChild(this.sound);
                 }
             });
+        }
+    }
+}
+
+
+class Particle {
+    constructor(x, y, color, velocityX, velocityY, size, lifespan) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.velocityX = velocityX;
+        this.velocityY = velocityY;
+        this.size = size;
+        this.lifespan = lifespan;
+        this.alpha = 1;
+    }
+    Update(secondsPassed) {
+        this.x += this.velocityX * secondsPassed;
+        this.y += this.velocityY * secondsPassed;
+        this.alpha = Math.max(0, this.alpha - secondsPassed / this.lifespan);
+    }
+    Render() {
+        context.globalAlpha = this.alpha;
+        context.fillStyle = this.color;
+        context.beginPath();
+        context.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
+        context.fill();
+        context.globalAlpha = 1;
+    }
+}
+
+class Explosion {
+    constructor(x, y, particleCount, particleSize, color, lifespan) {
+        this.particles = [];
+
+        for (let i = 0; i < particleCount; i++) {
+            const angle = Math.random() * 2 * Math.PI;
+            const speed = Math.random() * 500 + 100;
+            const velocityX = speed * Math.cos(angle);
+            const velocityY = speed * Math.sin(angle);
+            const particle = new Particle(x, y, color, velocityX, velocityY, particleSize, lifespan);
+            this.particles.push(particle);
+        }
+    }
+    Update(secondsPassed) {
+        for (const particle of this.particles) {
+            particle.Update(secondsPassed);
+        }
+        this.particles = this.particles.filter((particle) => particle.alpha > 0);
+
+        if(this.particles.length == 0){
+            console.log("Explosion finished!");
+            const i = gameObjects.indexOf(this);
+            return gameObjects.splice(i,1);
+        }
+    }
+    Render() {
+        for (const particle of this.particles) {
+            particle.Render();
         }
     }
 }
