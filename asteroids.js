@@ -7,6 +7,9 @@ let secondsPassed = 0;
 let oldTimeStamp = 0;
 let fps;
 let hud;
+
+// debug settings
+let debugHud = false;
 let debugShields = false;
 
 let audioManager;
@@ -37,7 +40,6 @@ function init(){
     gameManager = new GameManager;
     inputManager = new InputManager;
     audioManager = new AudioManager;
-    // soundManager = new SoundManager();
     document.body.addEventListener("keydown", (e) => {inputManager.KeyDown(e.keyCode)});
     document.body.addEventListener("keyup", (e) => {inputManager.KeyUp(e.keyCode)});
 
@@ -149,7 +151,7 @@ class GameManager {
         this.bonusLivesScore = 25;
         this.isSoundEnabled = true;
         this.gameOverSound = 'gameOver';
-        this.asteroidCount = {
+        this.levelData = {
             1: { bigAsteroids: 6, mediumAsteroids: 0, smallAsteroids: 0 },
             2: { bigAsteroids: 7, mediumAsteroids: 2, smallAsteroids: 0 },
             3: { bigAsteroids: 8, mediumAsteroids: 4, smallAsteroids: 3 },
@@ -161,7 +163,7 @@ class GameManager {
         // Create HUD & Some Asteroids
         gameObjects.push(new LivesCounter());
         gameObjects.push(new ScoreCounter());
-        gameObjects.push(new DebugHUD());
+        if(debugHud) gameObjects.push(new DebugHUD());
         gameObjects.push(new GameMsg('Asteroids','Press Enter To Start'));
         this.gameOverSound = audioManager.CreateSound('gameOver'); // Must be initialised outside of contructor due to reliance on gameManager.isSoundEnabled within the SoundManager.
         this.SpawnAsteroids(10);
@@ -180,7 +182,7 @@ class GameManager {
 
             case 'LEVEL_RUNNING':
                 if(this.currentAsteroids == 0){
-                    if(this.currentLevel == Object.keys(this.asteroidCount).length){
+                    if(this.currentLevel == Object.keys(this.levelData).length){
                         return this.GameOver();
                     }
                     this.LevelComplete();
@@ -227,13 +229,13 @@ class GameManager {
     }
     GameOver(){
         removeInstances(Ship);
-        if(this.currentLevel == Object.keys(this.asteroidCount).length){
+        if(this.currentLevel == Object.keys(this.levelData).length){
             this.gameState = 'GAME_OVER';
             return gameObjects.push(new GameMsg('GAME COMPLETE','Press Enter To Play Again'))
         }
-        this.gameOverSound.Play();
         this.gameState = 'GAME_OVER';
         gameObjects.push(new GameMsg('GAME OVER','Press Enter To Try Again'));
+        this.gameOverSound.Play();
     }
     AddScore(points){
         this.currentScore += points; 
@@ -256,9 +258,9 @@ class GameManager {
         this.currentLives = 3;
         this.currentAsteroids = 0;
 
-        this.SpawnAsteroids(this.asteroidCount[this.currentLevel].bigAsteroids, 1);
-        this.SpawnAsteroids(this.asteroidCount[this.currentLevel].mediumAsteroids, 2);
-        this.SpawnAsteroids(this.asteroidCount[this.currentLevel].smallAsteroids, 3);
+        this.SpawnAsteroids(this.levelData[this.currentLevel].bigAsteroids, 1);
+        this.SpawnAsteroids(this.levelData[this.currentLevel].mediumAsteroids, 2);
+        this.SpawnAsteroids(this.levelData[this.currentLevel].smallAsteroids, 3);
 
         gameObjects.push(new Ship());  
 
@@ -514,7 +516,8 @@ class Ship extends PhysicsObject {
             this.shipExplodeSoundEffect.Play();
             this.thrusterSoundEffect.Stop();
 
-            gameObjects.push(new Explosion(this.x, this.y, 50, 1.5, 'silver', 2));
+            // gameObjects.push(new Explosion(this.x, this.y, 50, 1.5, 'silver', 2));
+            gameObjects.push(new ShipExplosion(this.x, this.y));
 
             audioManager.CleanUp(this.shipExplodeSoundEffect);
             audioManager.CleanUp(this.thrusterSoundEffect);
@@ -926,7 +929,7 @@ class JetEmitter {
 }
 
 class Explosion {
-    constructor(x, y, particleCount, particleSize, color, lifespan) {
+    constructor(x, y, particleCount, particleSize, color = 'white', lifespan) {
         this.particles = [];
 
         for (let i = 0; i < particleCount; i++) {
@@ -952,6 +955,39 @@ class Explosion {
     Render() {
         for (const particle of this.particles) {
             particle.Render();
+        }
+    }
+}
+
+
+//gameObjects.push(new Explosion(this.x, this.y, 50, 1.5, 'silver', 2));
+
+// SHIP EXPLOSION WILL HAVE RANDOMISED PARTICLE COLOURS FROM LIST.
+class ShipExplosion extends Explosion {
+    constructor(x, y){
+        super(x, y);
+
+        this.particleCount = 50;
+        this.particleSize = 1.5;
+        this.lifespan = 2;
+        this.colors = [
+            'white',
+            'white',
+            'white',
+            'white',
+            'red',
+            'pink',
+            'rgba(0, 255, 255, 1)'
+        ]
+
+        for (let i = 0; i < this.particleCount; i++) {
+            const angle = Math.random() * 2 * Math.PI;
+            const speed = Math.random() * 500 + 100;
+            const velocityX = speed * Math.cos(angle);
+            const velocityY = speed * Math.sin(angle);
+            const particleColor = this.colors[Math.floor(Math.random() * this.colors.length)];
+            const particle = new Particle(x, y, particleColor, velocityX, velocityY, this.particleSize, this.lifespan);
+            this.particles.push(particle);
         }
     }
 }
