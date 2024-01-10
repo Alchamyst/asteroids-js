@@ -10,6 +10,7 @@ let hud;
 
 let gameManager;
 let inputManager;
+let soundManager;
 let gameObjects = [];
 
 document.addEventListener('DOMContentLoaded', init); 
@@ -23,6 +24,7 @@ function init(){
 
     gameManager = new GameManager;
     inputManager = new InputManager;
+    soundManager = new SoundManager;
     document.body.addEventListener("keydown", (e) => {inputManager.KeyDown(e.keyCode)});
     document.body.addEventListener("keyup", (e) => {inputManager.KeyUp(e.keyCode)});
 
@@ -177,6 +179,7 @@ class GameManager {
                 gameObjects.splice(i,1);
             }
         }
+        soundManager.PlaySound('gameOver');
         gameObjects.push(new GameMsg('GAME OVER','Press Enter To Try Again'));
     }
     ShipDestroyed(){
@@ -379,6 +382,7 @@ class Ship extends PhysicsObject {
         this.noseX = canvasWidth / 2 + 15;
         this.noseY = canvasHeight / 2;
         this.movingForward = false;
+        this.wasMovingForward = false;
         this.shieldTimer = 3;
 
         this.bulletTimer = 0;
@@ -387,9 +391,13 @@ class Ship extends PhysicsObject {
     Update(secondsPassed){
         super.Update();
 
+
         if(this.isColliding == true && this.shieldTimer == 0){
             gameManager.currentLives -= 1;
 
+            soundManager.PlaySound('shipExplode');
+            soundManager.StopSound('shipThrusters');
+            
             if(gameManager.currentLives == 0) return gameManager.GameOver();
 
             this.x = canvasWidth / 2;
@@ -405,12 +413,14 @@ class Ship extends PhysicsObject {
         this.bulletTimer += secondsPassed;
 
         // Check for inputs affecting ship actions.
+        this.wasMovingForward = this.movingForward;
         this.movingForward = inputManager.actions.forwardButton;
         this.dirModifier = 0;
         if(inputManager.actions.leftButton) this.dirModifier = -1;
         if(inputManager.actions.rightButton) this.dirModifier = 1;
         if(inputManager.actions.fireButton && this.bulletTimer >= this.bulletFireDelay){
             gameObjects.push(new Bullet(this.noseX, this.noseY, this.angle));
+            soundManager.PlaySound('shootBullet');
             this.bulletTimer = 0;
         };
 
@@ -420,6 +430,10 @@ class Ship extends PhysicsObject {
         if(this.movingForward) {
             this.velocityX += Math.cos(radians) * this.speed;
             this.velocityY += Math.sin(radians) * this.speed;
+        }
+        // Check if the moving forward state has changes since last update, and update the sounds. 
+        if(this.wasMovingForward !== this.movingForward){
+            this.movingForward ? soundManager.PlaySound('shipThrusters') : soundManager.StopSound('shipThrusters');
         }
 
         // Move the ship to the other side of the screen if we move out of bounds.
@@ -439,7 +453,11 @@ class Ship extends PhysicsObject {
         this.y -= (this.velocityY * secondsPassed);
 
         // Reduce the shield timer.
+        let previouShieldTimer = this.shieldTimer;
         this.shieldTimer = Math.max(0, this.shieldTimer - secondsPassed);
+        if(previouShieldTimer > this.shieldTimer && this.shieldTimer === 0){
+            soundManager.PlaySound('shieldDown');
+        }
     }
     Render(){
         super.Render();
@@ -483,7 +501,7 @@ class Bullet extends PhysicsObject {
         this.collisionRadius = 3;
         this.height = 4;
         this.width = 4;
-        this.speed = 1000;
+        this.speed = 2000;
         this.velocityX = 0;
         this.velocityY = 0;
     }
@@ -582,3 +600,124 @@ class Asteroid extends PhysicsObject {
         context.stroke();
     }
 }
+
+
+class SoundManager {
+    constructor(){
+        this.isAudioEnabled = true;
+        this.sfx = {
+            gameOver: new sound("./audio/game-fx-9-40197.mp3", 50),
+            shieldDown: new sound("./audio/one_beep-99630.mp3"),
+            shipExplode: new sound("./audio/hurt_c_08-102842.mp3", 75),
+            shipThrusters: new sound("./audio/thrusters_loopwav-14699.mp3", 50),
+            shootBullet: new sound("./audio/shoot02wav-14562.mp3", 15)
+        }
+    }
+    PlaySound(sound){
+        if(this.isAudioEnabled){
+            this.sfx[sound].play();
+        }
+    }
+    StopSound(sound){
+        if(this.isAudioEnabled){
+            this.sfx[sound].stop();
+        }
+    }
+    // PlayBulletSound(){
+    //     if(this.isAudioEnabled){
+    //         this.sfx.shootBullet.play();
+    //     }
+    // }
+}
+
+function sound(src, volPercent = 100) {
+    this.sound = new Audio(src);
+    this.sound.setAttribute("preload", "auto");
+    this.sound.setAttribute("controls", "none");
+    this.sound.style.display = "none";
+    document.body.appendChild(this.sound);
+
+    this.setVolume = function (volPercent) {
+        if (volPercent >= 0 && volPercent <= 100) {
+            this.sound.volume = volPercent / 100;
+        } else {
+            console.error('Invalid volume percentage. Please provide a value between 0 and 100.');
+        }
+    };
+
+    this.play = function(){
+        this.setVolume(volPercent);
+        this.sound.play();
+    }
+    this.stop = function(){
+        this.sound.pause();
+    }
+
+    
+}
+
+// class SoundManager {
+//     constructor() {
+//         this.isAudioEnabled = true;
+//         this.audioContext = null;
+
+//         // Initialize AudioContext when a user gesture occurs
+//         document.addEventListener('click', () => {
+//             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+//         }, { once: true });
+
+//         this.sfx = {
+//             shootBullet: new Sound(this.audioContext, "./audio/retro-game-shot-152052.mp3")
+//         };
+//     }
+
+//     PlaySound(sound) {
+//         if (this.audioContext) {
+//             this.sfx[sound].play();
+//         } else {
+//             console.error('AudioContext not initialized. Make sure to trigger this action after a user gesture.');
+//         }
+//     }
+// }
+
+// class Sound {
+//     constructor(audioContext, src) {
+//         this.audioContext = audioContext;
+//         this.src = src;
+//         this.buffer = null;
+//         this.isPlaying = false;
+
+//         this.loadSound();
+//     }
+
+//     loadSound() {
+//         const request = new XMLHttpRequest();
+//         request.open('GET', this.src, true);
+//         request.responseType = 'arraybuffer';
+
+//         request.onload = () => {
+//             this.audioContext.decodeAudioData(request.response, (buffer) => {
+//                 this.buffer = buffer;
+//             });
+//         };
+
+//         request.send();
+//     }
+
+//     play() {
+//         if (this.isPlaying) {
+//             return;
+//         }
+
+//         this.isPlaying = true;
+//         const source = this.audioContext.createBufferSource();
+//         source.buffer = this.buffer;
+
+//         source.onended = () => {
+//             this.isPlaying = false;
+//         };
+
+//         source.connect(this.audioContext.destination);
+//         source.start(0);
+//     }
+// }
