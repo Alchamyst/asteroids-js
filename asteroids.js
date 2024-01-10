@@ -14,12 +14,12 @@ let inputManager;
 let gameObjects = [];
 
 const sfx = {
-    asteroidExplode: { soundFile: "./audio/space-explosion-with-reverb-101449.mp3", volPercent: 50},
+    asteroidExplode: { soundFile: "./audio/space-explosion-with-reverb-101449.mp3", volPercent: 40},
     gameOver: { soundFile: "./audio/game-fx-9-40197.mp3", volPercent: 50},
     shieldDown: { soundFile: "./audio/one_beep-99630.mp3", volPercent: 100},
     shipExplode: { soundFile: "./audio/heavy-cineamtic-hit-166888.mp3", volPercent: 25},
     shipRespawn: { soundFile: "./audio/robot_01-47250.mp3", volPercent: 50},
-    shipThrusters: { soundFile: "./audio/thrusters_loopwav-14699.mp3", volPercent: 65},
+    shipThrusters: { soundFile: "./audio/thrusters_loopwav-14699.mp3", volPercent: 100},
     shootBullet: { soundFile: "./audio/shoot02wav-14562.mp3", volPercent: 10},
 }
 
@@ -707,37 +707,6 @@ class Sound {
                     this.sound.parentNode.removeChild(this.sound);
                 }
             });
-
-            // Stop the sound to trigger the 'ended' event
-            // this.sound.pause();
-            // this.sound.currentTime = 0;
         }
     }
 }
-
-// function sound(src, volPercent = 100) {
-//     this.sound = new Audio(src); 
-//     this.sound.setAttribute("preload", "auto");
-//     this.sound.setAttribute("controls", "none");
-//     this.sound.style.display = "none";
-//     document.body.appendChild(this.sound);
-
-//     this.setVolume = function (volPercent) {
-//         if (volPercent >= 0 && volPercent <= 100) {
-//             this.sound.volume = volPercent / 100;
-//         } else {
-//             console.error('Invalid volume percentage. Please provide a value between 0 and 100.');
-//         }
-//     };
-
-//     audioManager.AddPlayer(this.sound);
-//     audioManager.Count();
-
-//     this.play = function(){
-//         this.setVolume(volPercent);
-//         this.sound.play();
-//     }
-//     this.stop = function(){
-//         this.sound.pause();
-//     }   
-// }
