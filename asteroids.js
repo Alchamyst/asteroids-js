@@ -198,6 +198,9 @@ class GameManager {
         this.gameOverSound.Play();
         gameObjects.push(new GameMsg('GAME OVER','Press Enter To Try Again'));
     }
+    AddScore(points){
+        this.currentScore += points; 
+    }
     ShipDestroyed(){
         this.currentLives -= 1;
         if(this.currentLives <= 0) return this.GameOver();
@@ -403,8 +406,8 @@ class Ship extends PhysicsObject {
         this.movingForward = false;
         this.wasMovingForward = false;
 
-        // this.shieldTimer = 2;
-        this.shieldTimer = 1000;
+        this.shieldTimer = 2;
+        // this.shieldTimer = 2000;
 
         this.shieldSoundEffect = audioManager.CreateSound('shieldDown');
         this.shipExplodeSoundEffect = audioManager.CreateSound('shipExplode');
@@ -491,26 +494,54 @@ class Ship extends PhysicsObject {
     
         super.Render();
 
-        context.strokeStyle = this.strokeColor;
-        context.beginPath();
         let vertAngle = ((Math.PI * 2) /3);
         let radians = this.angle / Math.PI * 180;
-        this.noseX = this.x - this.radius * Math.cos(radians);
-        this.noseY = this.y - this.radius * Math.sin(radians);
+
+
+        // Render the main ship triangle.
+        context.strokeStyle = this.strokeColor;
+        context.beginPath();
         for(let i = 0; i < 3; i++){
             context.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
         }
         context.closePath();
         context.stroke();
 
-        // Front nose marker. 
+
+        // Render front nose marker. 
+        this.noseX = this.x - this.radius * Math.cos(radians);
+        this.noseY = this.y - this.radius * Math.sin(radians);
+        context.strokeStyle = 'red';
         context.beginPath();
-        context.strokeStyle = 'green';
-        context.arc(this.noseX, this.noseY, 2,0,2* Math.PI);
+        context.arc(this.noseX, this.noseY, 1.5,0,2* Math.PI);
         context.closePath();
         context.stroke();
 
-        // Shield visual
+        // testing - finding co-ordinates
+        // let testX = this.x+1 + this.radius/2 * Math.cos(radians);
+        // let testY = this.y+1 + this.radius/2 * Math.sin(radians);
+
+        // context.beginPath();
+        // context.strokeStyle = 'magenta';
+        // context.arc(testX, testY, 2,0,2* Math.PI);
+        // context.closePath();
+        // context.stroke();
+
+        // Render back jets. 
+        // let jetX = this.x + this.radius/2 * Math.cos(radians);
+        // let jetY = this.y + this.radius/2 * Math.sin(radians);
+
+        // context.strokeStyle = 'orange';
+        // context.beginPath();
+        // for(let i = 0; i < 3; i++){
+        //     let offSet = 0;
+        //     if (i != 1) offSet = 1;
+        //     context.lineTo(jetX + this.radius/2 * Math.cos(vertAngle * i + radians), jetY + offSet + this.radius/2 * Math.sin(vertAngle * i + radians))
+        // }
+        // context.closePath();
+        // context.stroke();
+
+        // Render shield visual.
         if (this.shieldTimer > 0){
             let opacity = this.shieldTimer > 1 ? 0.9 : this.shieldTimer;
             context.beginPath();
@@ -560,21 +591,14 @@ class Bullet extends PhysicsObject {
     Render(){
         super.Render();
 
-        context.fillStyle = 'white';
+        context.fillStyle = 'pink';
         context.fillRect(this.x, this.y, this.width, this.height);
     }
 }
 
 class Asteroid extends PhysicsObject {
-    constructor(startX, startY, level, speed){
+    constructor(startX, startY, level = 1){
         super();
-        this.x = startX || Math.floor(Math.random() * canvasWidth);
-        this.y = startY || Math.floor(Math.random() * canvasHeight);
-
-        this.angle = Math.floor(Math.random() * 328);
-        this.strokeColor = 'white';
-
-        this.ShotSoundEffect = audioManager.CreateSound('asteroidExplode');
 
         this.asteroidSizes = {
             1: 50,
@@ -596,13 +620,32 @@ class Asteroid extends PhysicsObject {
             2: 7,
             3: 9
         }
+        this.asteroidRotationSpeeds = {
+            1: Math.random() * 2.75,
+            2: Math.random() * 3.25,
+            3: Math.random() * 3.75
+        }
+
+        this.x = startX || Math.floor(Math.random() * canvasWidth);
+        this.y = startY || Math.floor(Math.random() * canvasHeight);
+
+        this.angle = Math.floor(Math.random() * 328);
+        this.strokeColor = 'white';
+
+        this.renderRotation = 0;
+        // this.renderRotationSpeed = 2;
+        // this.renderRotationSpeed = Math.random() * 2 - 1;
+
+        this.ShotSoundEffect = audioManager.CreateSound('asteroidExplode');
+
         this.level = level || 1;
         this.speed = this.asteroidSpeeds[level] || 200;
+        this.renderRotationSpeed = this.asteroidRotationSpeeds[level];
         this.radius = this.asteroidSizes[level] || 50;
         this.collisionRadius = this.asteroidCollisions[level] || 46;
     }
     ScoredHit(){
-        gameManager.currentScore += this.asteroidScores[this.level];
+        gameManager.AddScore(this.asteroidScores[this.level])
         this.ShotSoundEffect.Play();
         if(this.level === 1 || this.level === 2){
             const spawnLevel = this.level+1;
@@ -615,6 +658,10 @@ class Asteroid extends PhysicsObject {
     }
     Update(){
         super.Update();
+
+        // Update the rendering rotation over time.
+        this.renderRotation += this.renderRotationSpeed * secondsPassed;
+
         // this.angle += 0.1 * secondsPassed;
         var radians = this.angle / Math.PI * 180;
 
@@ -633,7 +680,9 @@ class Asteroid extends PhysicsObject {
         context.strokeStyle = this.strokeColor;
         context.beginPath();
         let vertAngle = ((Math.PI * 2) / 6);
-        var radians = this.angle / Math.PI * 180;
+        
+        // Apply rendering rotation to the asteroid's veritces.
+        var radians = this.angle / Math.PI * 180 + this.renderRotation;
         for(let i = 0; i < 6; i++){
             context.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
         }
