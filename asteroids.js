@@ -722,7 +722,7 @@ class Asteroid extends PhysicsObject {
         this.ShotSoundEffect.Play();
         gameManager.AddScore(this.asteroidScores[this.level]);
         gameManager.TrackAsteroids(-1)
-        gameObjects.push(new Explosion(this.x, this.y, 10, 2, 'brown', 1));
+        gameObjects.push(new Explosion(this.x, this.y, 10, 2, ['brown'], 1));
         if(this.level === 1 || this.level === 2){
             const spawnLevel = this.level+1;
             gameObjects.push(new Asteroid(spawnLevel, this.x - 5, this.y -5));
@@ -929,15 +929,32 @@ class JetEmitter {
 }
 
 class Explosion {
-    constructor(x, y, particleCount, particleSize, color = 'white', lifespan) {
+    // constructor(x, y, particleCount, particleSize, color = 'white', lifespan) {
+    constructor(x, y, particleCount = 10, particleSize = 1, colors = ['white'], particleLifespan) {
+        this.x = x;
+        this.y = y;
         this.particles = [];
+        this.colors = colors;
+        this.particleCount = particleCount;
+        this.particleSize = particleSize;
+        this.particleLifespan = particleLifespan
 
-        for (let i = 0; i < particleCount; i++) {
+        // for (let i = 0; i < particleCount; i++) {
+        //     const angle = Math.random() * 2 * Math.PI;
+        //     const speed = Math.random() * 500 + 100;
+        //     const velocityX = speed * Math.cos(angle);
+        //     const velocityY = speed * Math.sin(angle);
+        //     const particle = new Particle(x, y, color, velocityX, velocityY, particleSize, lifespan);
+        //     this.particles.push(particle);
+        // }
+
+        for (let i = 0; i < this.particleCount; i++) {
             const angle = Math.random() * 2 * Math.PI;
             const speed = Math.random() * 500 + 100;
             const velocityX = speed * Math.cos(angle);
             const velocityY = speed * Math.sin(angle);
-            const particle = new Particle(x, y, color, velocityX, velocityY, particleSize, lifespan);
+            const particleColor = this.colors[Math.floor(Math.random() * this.colors.length)];
+            const particle = new Particle(this.x, y, particleColor, velocityX, velocityY, this.particleSize, this.particleLifespan);
             this.particles.push(particle);
         }
     }
@@ -965,29 +982,29 @@ class Explosion {
 // SHIP EXPLOSION WILL HAVE RANDOMISED PARTICLE COLOURS FROM LIST.
 class ShipExplosion extends Explosion {
     constructor(x, y){
-        super(x, y);
-
-        this.particleCount = 50;
-        this.particleSize = 1.5;
-        this.lifespan = 2;
-        this.colors = [
+        const particleCount = 50;
+        const particleSize = 1.5;
+        const lifespan = 2;
+        const colors = [
             'white',
             'white',
             'white',
             'white',
             'red',
             'pink',
-            'rgba(0, 255, 255, 1)'
+            'rgba(0, 255, 255, 1)' // Shield color.
         ]
 
-        for (let i = 0; i < this.particleCount; i++) {
-            const angle = Math.random() * 2 * Math.PI;
-            const speed = Math.random() * 500 + 100;
-            const velocityX = speed * Math.cos(angle);
-            const velocityY = speed * Math.sin(angle);
-            const particleColor = this.colors[Math.floor(Math.random() * this.colors.length)];
-            const particle = new Particle(x, y, particleColor, velocityX, velocityY, this.particleSize, this.lifespan);
-            this.particles.push(particle);
-        }
+        super(x, y, particleCount, particleSize, colors, lifespan);
+
+        // for (let i = 0; i < this.particleCount; i++) {
+        //     const angle = Math.random() * 2 * Math.PI;
+        //     const speed = Math.random() * 500 + 100;
+        //     const velocityX = speed * Math.cos(angle);
+        //     const velocityY = speed * Math.sin(angle);
+        //     const particleColor = this.colors[Math.floor(Math.random() * this.colors.length)];
+        //     const particle = new Particle(x, y, particleColor, velocityX, velocityY, this.particleSize, this.lifespan);
+        //     this.particles.push(particle);
+        // }
     }
 }
