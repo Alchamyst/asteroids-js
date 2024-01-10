@@ -17,16 +17,6 @@ let gameManager;
 let inputManager;
 let gameObjects = [];
 
-const sfx = {
-    asteroidExplode: { soundFile: "./audio/space-explosion-with-reverb-101449.mp3", volPercent: 40},
-    gameOver: { soundFile: "./audio/game-fx-9-40197.mp3", volPercent: 50},
-    shieldDown: { soundFile: "./audio/one_beep-99630.mp3", volPercent: 100},
-    shipExplode: { soundFile: "./audio/heavy-cineamtic-hit-166888.mp3", volPercent: 25},
-    shipRespawn: { soundFile: "./audio/robot_01-47250.mp3", volPercent: 50},
-    shipThrusters: { soundFile: "./audio/thrusters_loopwav-14699.mp3", volPercent: 100},
-    shootBullet: { soundFile: "./audio/shoot02wav-14562.mp3", volPercent: 10},
-}
-
 document.addEventListener('DOMContentLoaded', init); 
 
 function init(){
@@ -739,6 +729,16 @@ class AudioManager {
 
 class Sound {
     constructor(soundEffect, loop = false) {
+        const sfx = {
+            asteroidExplode: { soundFile: "./audio/space-explosion-with-reverb-101449.mp3", volPercent: 40},
+            gameOver: { soundFile: "./audio/game-fx-9-40197.mp3", volPercent: 50},
+            shieldDown: { soundFile: "./audio/one_beep-99630.mp3", volPercent: 100},
+            shipExplode: { soundFile: "./audio/heavy-cineamtic-hit-166888.mp3", volPercent: 25},
+            shipRespawn: { soundFile: "./audio/robot_01-47250.mp3", volPercent: 50},
+            shipThrusters: { soundFile: "./audio/thrusters_loopwav-14699.mp3", volPercent: 100},
+            shootBullet: { soundFile: "./audio/shoot02wav-14562.mp3", volPercent: 10},
+        }
+
         this.sound = new Audio(sfx[soundEffect].soundFile);
         this.sound.setAttribute("preload", "auto");
         this.sound.setAttribute("controls", "none");
