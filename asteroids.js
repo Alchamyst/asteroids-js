@@ -260,6 +260,7 @@ class GameManager {
         this.SpawnAsteroids(this.asteroidCount[this.currentLevel].smallAsteroids, 3);
 
         gameObjects.push(new Ship());  
+
         this.gameState = 'LEVEL_RUNNING'; 
     }
     SpawnAsteroids(amount, level = 1){
@@ -271,6 +272,9 @@ class GameManager {
     }
     TrackAsteroids(qty){
         this.currentAsteroids += qty;
+    }
+    NewShip(){
+        gameObjects.push(new Ship(2));
     }
 }
 
@@ -480,6 +484,11 @@ class Ship extends PhysicsObject {
         this.shipRespawnSoundEffect = audioManager.CreateSound('shipRespawn');
         this.thrusterSoundEffect = audioManager.CreateSound('shipThrusters', true);
 
+        this.jetX = this.x;
+        this.jetY = this.y;
+        this.jetAngle = this.angle;
+        this.jetEmitter = new JetEmitter(this.jetX, this.jetY, this.jetAngle);
+        gameObjects.push(this.jetEmitter);
 
         this.bulletTimer = 0;
         this.bulletFireDelay = 0.2;
@@ -508,7 +517,8 @@ class Ship extends PhysicsObject {
 
             audioManager.CleanUp(this.shipExplodeSoundEffect);
             audioManager.CleanUp(this.thrusterSoundEffect);
-            
+
+            this.jetEmitter.Destroy();
             return gameManager.ShipDestroyed();
         }
 
@@ -532,9 +542,16 @@ class Ship extends PhysicsObject {
             this.velocityX += Math.cos(radians) * this.speed;
             this.velocityY += Math.sin(radians) * this.speed;
         }
-        // Check if the moving forward state has changes since last update, and update the sounds. 
+        // Check if the moving forward state has changes since last update, and update sounds + particles. 
         if(this.wasMovingForward !== this.movingForward){
-            this.movingForward ? this.thrusterSoundEffect.Play('shipThrusters') : this.thrusterSoundEffect.Stop('shipThrusters');
+            if(this.movingForward){
+                this.thrusterSoundEffect.Play('shipThrusters');
+                this.jetEmitter.StartEmitting();
+            } 
+            if(!this.movingForward){
+                this.thrusterSoundEffect.Stop('shipThrusters');
+                this.jetEmitter.StopEmitting()
+            }
         }
 
         // Move the ship to the other side of the screen if we move out of bounds.
@@ -550,6 +567,14 @@ class Ship extends PhysicsObject {
         this.angle += (this.rotateSpeed * this.dirModifier) * secondsPassed;
         this.x -= (this.velocityX * secondsPassed);
         this.y -= (this.velocityY * secondsPassed);
+
+        // Update jetEmitter location.
+        // this.jetX = this.x;
+        // this.jetY = this.y;
+        this.jetX = this.x + this.radius/2 * Math.cos(radians);
+        this.jetY = this.y + this.radius/2 * Math.sin(radians);
+        this.jetAngle = this.angle;
+        this.jetEmitter.SetLocation(this.jetX, this.jetY, this.jetAngle, this.velocityX, this.velocityY); // TEST passing velocity of ship.
 
         // Reduce the shield timer.
         let previouShieldTimer = this.shieldTimer;
@@ -585,30 +610,6 @@ class Ship extends PhysicsObject {
         context.arc(this.noseX, this.noseY, 1.5,0,2* Math.PI);
         context.closePath();
         context.stroke();
-
-        // testing - finding co-ordinates
-        // let testX = this.x+1 + this.radius/2 * Math.cos(radians);
-        // let testY = this.y+1 + this.radius/2 * Math.sin(radians);
-
-        // context.beginPath();
-        // context.strokeStyle = 'magenta';
-        // context.arc(testX, testY, 2,0,2* Math.PI);
-        // context.closePath();
-        // context.stroke();
-
-        // Render back jets. 
-        // let jetX = this.x + this.radius/2 * Math.cos(radians);
-        // let jetY = this.y + this.radius/2 * Math.sin(radians);
-
-        // context.strokeStyle = 'orange';
-        // context.beginPath();
-        // for(let i = 0; i < 3; i++){
-        //     let offSet = 0;
-        //     if (i != 1) offSet = 1;
-        //     context.lineTo(jetX + this.radius/2 * Math.cos(vertAngle * i + radians), jetY + offSet + this.radius/2 * Math.sin(vertAngle * i + radians))
-        // }
-        // context.closePath();
-        // context.stroke();
 
         // Render shield visual.
         if (this.shieldTimer > 0){
@@ -858,6 +859,68 @@ class Particle {
         context.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
         context.fill();
         context.globalAlpha = 1;
+    }
+}
+
+class JetEmitter {
+    constructor(x, y, angle) {
+        this.particles = [];
+
+        this.x = x;
+        this.y = y;
+
+        this.shouldEmit = false;
+        this.particlesPerSec = 255;
+        this.particleSize = 2;
+        this.particleColor = 'orange';
+        this.particleLifespan = 0.1;
+        this.particleSpeedMultiplier = 0.25;
+
+        // this.angle = angle;
+        // this.speed = 0;
+
+    }
+    StartEmitting(){
+        this.shouldEmit = true;
+    }
+    StopEmitting(){
+        this.shouldEmit = false;
+    }
+    SetLocation(x, y, angle, velX, velY){
+        this.x = x;
+        this.y = y;
+        // this.angle = angle;
+        this.velX = velX;
+        this.velY = velY;
+    }
+    Update(secondsPassed) {
+        if(this.shouldEmit){
+            const particlesQty = Math.floor(this.particlesPerSec * secondsPassed); // This is affecting quality!
+            for (let i = 0; i < particlesQty ; i++) {
+                // const velocityX = this.speed * Math.cos(this.angle); // TEST passing velocity of ship.
+                // const velocityY = this.speed * Math.sin(this.angle); // TEST passing velocity of ship.
+                const velocityX = this.velX;
+                const velocityY = this.velY 
+                const particle = new Particle(this.x, this.y, this.particleColor, velocityX * this.particleSpeedMultiplier, velocityY * this.particleSpeedMultiplier, this.particleSize, this.particleLifespan);
+                this.particles.push(particle);
+            }
+        }
+        for (const particle of this.particles) {
+            particle.Update(secondsPassed);
+        }
+        this.particles = this.particles.filter((particle) => particle.alpha > 0);
+    }
+    Render() {
+        for (const particle of this.particles) {
+            particle.Render();
+        }
+    }  
+    Destroy(){
+        for(let i=0; i < gameObjects.length; i++) {
+            if(gameObjects[i] instanceof JetEmitter){
+                gameObjects.splice(i,1);
+            }
+        }
     }
 }
 
