@@ -7,6 +7,7 @@ let secondsPassed = 0;
 let oldTimeStamp = 0;
 let fps;
 let hud;
+let debugShields = false;
 
 let audioManager;
 let gameManager;
@@ -160,6 +161,7 @@ class GameManager {
         // Create HUD & Some Asteroids
         gameObjects.push(new LivesCounter());
         gameObjects.push(new ScoreCounter());
+        gameObjects.push(new DebugHUD());
         gameObjects.push(new GameMsg('Asteroids','Press Enter To Start'));
         this.gameOverSound = audioManager.CreateSound('gameOver'); // Must be initialised outside of contructor due to reliance on gameManager.isSoundEnabled within the SoundManager.
         this.SpawnAsteroids(10);
@@ -182,6 +184,9 @@ class GameManager {
                         return this.GameOver();
                     }
                     this.LevelComplete();
+                }
+                if(debugShields){
+
                 }
                 break;
 
@@ -354,6 +359,28 @@ class GameMsg extends HudElement {
     }
 }
 
+class DebugHUD extends HudElement {
+    constructor(){
+        super(canvasWidth-10, canvasHeight-10); 
+        this.font = '25px Arial';  
+        this.fpsOutput = "FPS: " + fps;
+        this.gameState = "GameState: " + gameManager.gameState;
+        this.asteroidsOutput = "Asteroids: " + gameManager.currentAsteroids;
+    }
+    Update(){
+        // this.fpsOutput = "FPS: " + fps;
+        this.gameState = "GameState: " + gameManager.gameState;
+        this.asteroidsOutput = "Asteroids: " + gameManager.currentAsteroids;
+    }
+    Render(){
+        context.font = this.font;
+        context.fillStyle = this.color;
+        // context.fillText(this.fpsOutput, this.x - context.measureText(this.fpsOutput).width, this.y);
+        context.fillText(this.gameState, this.x - context.measureText(this.gameState).width, this.y); 
+        context.fillText(this.asteroidsOutput, this.x - context.measureText(this.asteroidsOutput).width, this.y - 30);    
+    }
+}
+
 class ScoreCounter extends HudElement {
     constructor(){
         super(0, 0);     
@@ -404,18 +431,6 @@ class LivesCounter extends HudElement {
     }
 }
 
-class TimersHUD extends HudElement {
-    constructor(){
-        super(canvasWidth-125, canvasHeight-25); 
-        this.font = '25px Arial';  
-    }
-    Render(){
-        context.font = this.font;
-        context.fillStyle = this.color;
-        context.fillText("FPS: " + fps, this.x, this.y);
-        // context.fillText("SP: " + secondsPassed, this.x-50, this.y-40);      
-    }
-}
 
 class PhysicsObject extends GameObject {
     constructor(x, y, velocityX, velocityY, collisionRadius){
@@ -482,6 +497,7 @@ class Ship extends PhysicsObject {
 
         super.Update();
 
+        if(debugShields) this.shieldTimer = 5;
 
         if(this.isColliding == true && this.shieldTimer == 0){
 
