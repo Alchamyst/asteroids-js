@@ -2,6 +2,14 @@ body {
     background: #000;
 }
 
+li {
+    font-family: system-ui,sans-serif;
+    font-size: 1em;
+    color: #F0F0F0;
+    text-align: center;
+    list-style-type: none;
+}
+
 #container {
     max-width: 1200px;
     margin: auto;
