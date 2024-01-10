@@ -149,16 +149,12 @@ class GameManager {
         this.bonusLivesScore = 25;
         this.isSoundEnabled = true;
         this.gameOverSound = 'gameOver';
-        // this.asteroidCount = {
-        //     1: { bigAsteroids: 6, mediumAsteroids: 0, smallAsteroids: 0 },
-        //     2: { bigAsteroids: 7, mediumAsteroids: 2, smallAsteroids: 0 },
-        //     3: { bigAsteroids: 8, mediumAsteroids: 4, smallAsteroids: 3 },
-        //     4: { bigAsteroids: 9, mediumAsteroids: 6, smallAsteroids: 6 },
-        //     5: { bigAsteroids: 10, mediumAsteroids: 8, smallAsteroids: 9 }
-        // }
         this.asteroidCount = {
-            1: { bigAsteroids: 1, mediumAsteroids: 1, smallAsteroids: 1 },
-            2: { bigAsteroids: 2, mediumAsteroids: 2, smallAsteroids: 2 },
+            1: { bigAsteroids: 6, mediumAsteroids: 0, smallAsteroids: 0 },
+            2: { bigAsteroids: 7, mediumAsteroids: 2, smallAsteroids: 0 },
+            3: { bigAsteroids: 8, mediumAsteroids: 4, smallAsteroids: 3 },
+            4: { bigAsteroids: 9, mediumAsteroids: 6, smallAsteroids: 6 },
+            5: { bigAsteroids: 10, mediumAsteroids: 8, smallAsteroids: 9 }
         }
     }
     Init(){
