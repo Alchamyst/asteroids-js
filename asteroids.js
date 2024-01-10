@@ -10,8 +10,16 @@ let hud;
 
 let gameManager;
 let inputManager;
-let soundManager;
 let gameObjects = [];
+
+const sfx = {
+    asteroidExplode: { soundFile: "./audio/space-explosion-with-reverb-101449.mp3", volPercent: 50},
+    gameOver: { soundFile: "./audio/game-fx-9-40197.mp3", volPercent: 50},
+    shieldDown: { soundFile: "./audio/one_beep-99630.mp3", volPercent: 100},
+    shipExplode: { soundFile: "./audio/heavy-cineamtic-hit-166888.mp3", volPercent: 25},
+    shipThrusters: { soundFile: "./audio/thrusters_loopwav-14699.mp3", volPercent: 65},
+    shootBullet: { soundFile: "./audio/shoot02wav-14562.mp3", volPercent: 10},
+}
 
 document.addEventListener('DOMContentLoaded', init); 
 
@@ -24,7 +32,7 @@ function init(){
 
     gameManager = new GameManager;
     inputManager = new InputManager;
-    soundManager = new SoundManager;
+    // soundManager = new SoundManager();
     document.body.addEventListener("keydown", (e) => {inputManager.KeyDown(e.keyCode)});
     document.body.addEventListener("keyup", (e) => {inputManager.KeyUp(e.keyCode)});
 
@@ -132,6 +140,8 @@ class GameManager {
         this.currentLives = 0;
         this.currentScore = 0;
         this.asteroidCount = 8;
+        this.isSoundEnabled = true;
+        this.gameOverSound = 'gameOver';
     }
     Init(){
         // Create HUD & Some Asteroids
@@ -139,6 +149,7 @@ class GameManager {
         gameObjects.push(new LivesCounter());
         gameObjects.push(new ScoreCounter());
         gameObjects.push(new GameMsg('Asteroids','Press Enter To Start'));
+        this.gameOverSound = new SoundManager('gameOver'); // Must be initialised outside of contructor due to reliance on gameManager.isSoundEnabled within the SoundManager.
         this.SpawnAsteroids(10);
     }
     CheckGameState(){
@@ -179,20 +190,20 @@ class GameManager {
                 gameObjects.splice(i,1);
             }
         }
-        soundManager.PlaySound('gameOver');
+        this.gameOverSound.PlaySound();
         gameObjects.push(new GameMsg('GAME OVER','Press Enter To Try Again'));
     }
-    ShipDestroyed(){
-        this.currentLives -= 1;
-        if(this.currentLives <= 0) return this.GameOver();
+    // ShipDestroyed(){
+    //     this.currentLives -= 1;
+    //     if(this.currentLives <= 0) return this.GameOver();
 
-        for(let i=0; i < gameObjects.length; i++) {
-            if(gameObjects[i] instanceof Ship){
-                gameObjects.splice(i,1);
-            }
-        }
-        gameObjects.push(new Ship());
-    }
+    //     for(let i=0; i < gameObjects.length; i++) {
+    //         if(gameObjects[i] instanceof Ship){
+    //             gameObjects.splice(i,1);
+    //         }
+    //     }
+    //     gameObjects.push(new Ship());
+    // }
     SpawnAsteroids(amount){
         for(let i = 0; i < amount; i++){
             gameObjects.push(new Asteroid());
@@ -383,7 +394,12 @@ class Ship extends PhysicsObject {
         this.noseY = canvasHeight / 2;
         this.movingForward = false;
         this.wasMovingForward = false;
+
         this.shieldTimer = 3;
+
+        this.shieldSoundEffect = new SoundManager('shieldDown');
+        this.thrusterSoundEffect = new SoundManager('shipThrusters');
+        this.shipExplodeSoundEffect = new SoundManager('shipExplode');
 
         this.bulletTimer = 0;
         this.bulletFireDelay = 0.2;
@@ -395,8 +411,8 @@ class Ship extends PhysicsObject {
         if(this.isColliding == true && this.shieldTimer == 0){
             gameManager.currentLives -= 1;
 
-            soundManager.PlaySound('shipExplode');
-            soundManager.StopSound('shipThrusters');
+            this.shipExplodeSoundEffect.PlaySound();
+            this.thrusterSoundEffect.StopSound('shipThrusters');
             
             if(gameManager.currentLives == 0) return gameManager.GameOver();
 
@@ -420,7 +436,6 @@ class Ship extends PhysicsObject {
         if(inputManager.actions.rightButton) this.dirModifier = 1;
         if(inputManager.actions.fireButton && this.bulletTimer >= this.bulletFireDelay){
             gameObjects.push(new Bullet(this.noseX, this.noseY, this.angle));
-            soundManager.PlaySound('shootBullet');
             this.bulletTimer = 0;
         };
 
@@ -433,7 +448,7 @@ class Ship extends PhysicsObject {
         }
         // Check if the moving forward state has changes since last update, and update the sounds. 
         if(this.wasMovingForward !== this.movingForward){
-            this.movingForward ? soundManager.PlaySound('shipThrusters') : soundManager.StopSound('shipThrusters');
+            this.movingForward ? this.thrusterSoundEffect.PlaySound('shipThrusters') : this.thrusterSoundEffect.StopSound('shipThrusters');
         }
 
         // Move the ship to the other side of the screen if we move out of bounds.
@@ -456,7 +471,7 @@ class Ship extends PhysicsObject {
         let previouShieldTimer = this.shieldTimer;
         this.shieldTimer = Math.max(0, this.shieldTimer - secondsPassed);
         if(previouShieldTimer > this.shieldTimer && this.shieldTimer === 0){
-            soundManager.PlaySound('shieldDown');
+            this.shieldSoundEffect.PlaySound();
         }
     }
     Render(){
@@ -504,6 +519,9 @@ class Bullet extends PhysicsObject {
         this.speed = 2000;
         this.velocityX = 0;
         this.velocityY = 0;
+        this.bulletSoundEffect = new SoundManager('shootBullet');
+        this.soundPlayed = false;
+        
     }
     Remove(){
         var i = gameObjects.indexOf(this);
@@ -512,6 +530,10 @@ class Bullet extends PhysicsObject {
     Update(){
         super.Update();
 
+        if(!this.soundPlayed){
+            this.bulletSoundEffect.PlaySound();
+            this.soundPlayed = true;
+        }
         var radians = this.angle / Math.PI * 180;
         this.x -= Math.cos(radians) * this.speed * secondsPassed;
         this.y -= Math.sin(radians) * this.speed * secondsPassed;
@@ -603,31 +625,28 @@ class Asteroid extends PhysicsObject {
 
 
 class SoundManager {
-    constructor(){
-        this.isAudioEnabled = true;
-        this.sfx = {
-            gameOver: new sound("./audio/game-fx-9-40197.mp3", 50),
-            shieldDown: new sound("./audio/one_beep-99630.mp3"),
-            shipExplode: new sound("./audio/hurt_c_08-102842.mp3", 75),
-            shipThrusters: new sound("./audio/thrusters_loopwav-14699.mp3", 50),
-            shootBullet: new sound("./audio/shoot02wav-14562.mp3", 15)
-        }
+    constructor(soundEffect){
+        this.isAudioEnabled = gameManager.isSoundEnabled;
+        this.sound = new sound(sfx[soundEffect].soundFile, sfx[soundEffect].volPercent)
+
+        // const sfx = {
+        //     gameOver: { soundFile: "./audio/game-fx-9-40197.mp3", volPercent: 50},
+        //     shieldDown: { soundFile: "./audio/one_beep-99630.mp3", volPercent: 100},
+        //     shipExplode: { soundFile: "./audio/hurt_c_08-102842.mp3", volPercent: 75},
+        //     shipThrusters: { soundFile: "./audio/thrusters_loopwav-14699.mp3", volPercent: 50},
+        //     shootBullet: { soundFile: "./audio/shoot02wav-14562.mp3", volPercent: 15},
+        // }
     }
-    PlaySound(sound){
+    PlaySound(){
         if(this.isAudioEnabled){
-            this.sfx[sound].play();
+            this.sound.play();
         }
     }
-    StopSound(sound){
+    StopSound(){
         if(this.isAudioEnabled){
-            this.sfx[sound].stop();
+            this.sound.stop();
         }
     }
-    // PlayBulletSound(){
-    //     if(this.isAudioEnabled){
-    //         this.sfx.shootBullet.play();
-    //     }
-    // }
 }
 
 function sound(src, volPercent = 100) {
