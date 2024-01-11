@@ -136,6 +136,8 @@ class GameManager {
             4: { bigAsteroids: 9, mediumAsteroids: 6, smallAsteroids: 6 },
             5: { bigAsteroids: 10, mediumAsteroids: 8, smallAsteroids: 9 }
         }
+        this.player = undefined;
+        this.playerRespawnTime = 2;
     }
     Init(){
         // Create HUD & Some Asteroids
@@ -193,6 +195,7 @@ class GameManager {
     }
     LevelComplete(){
         this.gameState = 'LEVEL_COMPLETE'; 
+        this.player.CleanUpEffects(); 
         removeInstances(Ship);
         this.AddScore(this.currentLives * this.bonusLivesScore);
         gameObjects.push(new GameMsg(`LEVEL ${this.currentLevel} COMPLETE`,'Press Enter To Continue.'));
@@ -220,7 +223,7 @@ class GameManager {
         if(this.currentLives <= 0) return this.GameOver();
 
         removeInstances(Ship);
-        gameObjects.push(new Ship(2));
+        this.NewShip();
     }
     LevelSetup(){
         removeInstances(Asteroid);
@@ -233,7 +236,7 @@ class GameManager {
         this.SpawnAsteroids(this.levelData[this.currentLevel].mediumAsteroids, 2);
         this.SpawnAsteroids(this.levelData[this.currentLevel].smallAsteroids, 3);
 
-        gameObjects.push(new Ship());  
+        this.NewShip(0);
 
         this.gameState = 'LEVEL_RUNNING'; 
     }
@@ -241,14 +244,14 @@ class GameManager {
         for(let i = 0; i < amount; i++){
             gameObjects.push(new Asteroid(level));
             this.TrackAsteroids(1);
-        }
-        
+        }    
     }
     TrackAsteroids(qty){
         this.currentAsteroids += qty;
     }
-    NewShip(){
-        gameObjects.push(new Ship(2));
+    NewShip(respawn = this.playerRespawnTime){
+        this.player = new Ship(respawn);
+        gameObjects.push(this.player);
     }
 }
 
@@ -556,12 +559,19 @@ class Ship extends PhysicsObject {
     }
     ShipWasHit(){
         this.shipExplodeSoundEffect.Play();
-        this.thrusterSoundEffect.Stop();
+        // this.thrusterSoundEffect.Stop();
         gameObjects.push(new ShipExplosion(this.x, this.y));
+        this.CleanUpEffects();
+        // audioManager.CleanUp(this.shipExplodeSoundEffect);
+        // audioManager.CleanUp(this.thrusterSoundEffect);
+        // this.jetEmitter.Destroy();
+        gameManager.ShipDestroyed();
+    }
+    CleanUpEffects(){
+        this.thrusterSoundEffect.Stop();
         audioManager.CleanUp(this.shipExplodeSoundEffect);
         audioManager.CleanUp(this.thrusterSoundEffect);
         this.jetEmitter.Destroy();
-        gameManager.ShipDestroyed();
     }
 }
 
