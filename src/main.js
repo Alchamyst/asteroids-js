@@ -1,6 +1,7 @@
 // debug settings
 const debugHud = false;
 const debugShields = false;
+const easyLevels = false;
 const renderCollision = false;
 
 const canvasWidth = 1200;
@@ -128,14 +129,22 @@ class GameManager {
         this.currentAsteroids = 0;
         this.bonusLivesScore = 25;
         this.isSoundEnabled = true;
-        this.gameOverSound = 'gameOver';
-        this.levelData = {
+        this.gameOverSound = '';
+        this.missionCompleteSound = '';
+                this.levelData = {
             1: { bigAsteroids: 6, mediumAsteroids: 0, smallAsteroids: 0 },
             2: { bigAsteroids: 7, mediumAsteroids: 2, smallAsteroids: 0 },
             3: { bigAsteroids: 8, mediumAsteroids: 4, smallAsteroids: 3 },
             4: { bigAsteroids: 9, mediumAsteroids: 6, smallAsteroids: 6 },
             5: { bigAsteroids: 10, mediumAsteroids: 8, smallAsteroids: 9 }
         }
+        if (easyLevels){
+            this.levelData = {
+                1: { bigAsteroids: 1, mediumAsteroids: 1, smallAsteroids: 1 },
+                2: { bigAsteroids: 1, mediumAsteroids: 1, smallAsteroids: 2 }
+            }
+        }
+
         this.player = undefined;
         this.playerRespawnTime = 2;
     }
@@ -146,6 +155,7 @@ class GameManager {
         gameObjects.push(new ScoreCounter());
         gameObjects.push(new GameMsg('Asteroids','Press Enter To Start'));
         this.gameOverSound = audioManager.CreateSound('gameOver'); // Must be initialised outside of contructor due to reliance on gameManager.isSoundEnabled within the SoundManager.
+        this.missionCompleteSound = audioManager.CreateSound('missionComplete'); 
         this.SpawnAsteroids(10);
     }
     CheckGameState(){
@@ -161,6 +171,7 @@ class GameManager {
                 break;
 
             case 'LEVEL_RUNNING':
+                this.TrackAsteroids();
                 if(this.currentAsteroids == 0){
                     if(this.currentLevel == Object.keys(this.levelData).length){
                         return this.GameOver();
@@ -206,13 +217,15 @@ class GameManager {
         this.LevelSetup();
     }
     GameOver(){
+        this.player.CleanUpEffects(); 
         removeInstances(Ship);
         if(this.currentLevel == Object.keys(this.levelData).length){
             this.gameState = 'GAME_OVER';
-            return gameObjects.push(new GameMsg('GAME COMPLETE','Press Enter To Play Again'))
+            this.missionCompleteSound.Play();
+            return gameObjects.push(new GameMsg('MISSION COMPLETE','Press Enter To Play Again', 'lime'));
         }
         this.gameState = 'GAME_OVER';
-        gameObjects.push(new GameMsg('GAME OVER','Press Enter To Try Again'));
+        gameObjects.push(new GameMsg('GAME OVER','Press Enter To Try Again', 'red'));
         this.gameOverSound.Play();
     }
     AddScore(points){
@@ -243,11 +256,17 @@ class GameManager {
     SpawnAsteroids(amount, level = 1){
         for(let i = 0; i < amount; i++){
             gameObjects.push(new Asteroid(level));
-            this.TrackAsteroids(1);
-        }    
+        }  
     }
-    TrackAsteroids(qty){
-        this.currentAsteroids += qty;
+    TrackAsteroids(){
+        let asteroidCount = 0;
+        for(let i=0; i < gameObjects.length; i++) {
+            if(gameObjects[i] instanceof Asteroid){
+                asteroidCount += 1; 
+            }
+        }
+        this.currentAsteroids = asteroidCount;
+
     }
     NewShip(respawn = this.playerRespawnTime){
         this.player = new Ship(respawn);
@@ -300,20 +319,23 @@ class HudElement extends GameObject {
 }
 
 class GameMsg extends HudElement {
-    constructor(text1, text2){
+    constructor(text1, text2, textColor1 = 'white', textColor2 = 'white'){
         super();
         this.font1 = '50px Arial';
         this.font2 = '20px Arial';
         this.text1 = text1 || 'Foo';
         this.text2 = text2 || 'Bar';
+        this.text1Color = textColor1;
+        this.text2Color = textColor2;
         this.shouldClose = false;
     }
     Update(){
     }
     Render(){
-        context.fillStyle = this.color;
+        context.fillStyle = this.text1Color;
         context.font = this.font1;
         context.fillText(this.text1, (canvasWidth - context.measureText(this.text1).width) /2, canvasHeight / 2);
+        context.fillStyle = this.text2Color;
         context.font = this.font2;
         context.fillText(this.text2, (canvasWidth - (context.measureText(this.text2).width)) / 2, (canvasHeight / 2) + 40);
     }
@@ -666,13 +688,13 @@ class Asteroid extends PhysicsObject {
     ScoredHit(){
         this.ShotSoundEffect.Play();
         gameManager.AddScore(this.asteroidScores[this.level]);
-        gameManager.TrackAsteroids(-1)
+        // gameManager.TrackAsteroids(-1)
         gameObjects.push(new Explosion(this.x, this.y, 10, 2, ['brown'], 1));
         if(this.level === 1 || this.level === 2){
             const spawnLevel = this.level+1;
             gameObjects.push(new Asteroid(spawnLevel, this.x - 5, this.y -5));
             gameObjects.push(new Asteroid(spawnLevel, this.x + 5, this.y + 5));
-            gameManager.TrackAsteroids(2)
+            // gameManager.TrackAsteroids(2)
         }
         audioManager.CleanUp(this.ShotSoundEffect);
         var i = gameObjects.indexOf(this);
@@ -742,6 +764,7 @@ class Sound {
         const sfx = {
             asteroidExplode: { soundFile: "./audio/space-explosion-with-reverb-101449.mp3", volPercent: 40},
             gameOver: { soundFile: "./audio/game-fx-9-40197.mp3", volPercent: 50},
+            missionComplete: { soundFile: "./audio/game-level-complete-143022.mp3", volPercent: 50},
             shieldDown: { soundFile: "./audio/one_beep-99630.mp3", volPercent: 100},
             shipExplode: { soundFile: "./audio/heavy-cineamtic-hit-166888.mp3", volPercent: 25},
             shipRespawn: { soundFile: "./audio/robot_01-47250.mp3", volPercent: 50},
