@@ -651,7 +651,7 @@ class Asteroid extends PhysicsObject {
         this.y = startY || Math.floor(Math.random() * canvasHeight);
 
         this.angle = Math.floor(Math.random() * 328);
-        this.strokeColor = 'white';
+        this.strokeColor = 'rgb(180,138,113)';
 
         this.renderRotation = 0;
 
