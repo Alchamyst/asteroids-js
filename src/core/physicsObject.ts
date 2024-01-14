@@ -5,7 +5,7 @@ export default class PhysicsObject extends GameObject {
     private renderCollision: boolean;
     private isColliding: boolean;
 
-    constructor(ctx: any, x: number, y: number, collisionRadius: number, renderCollision: boolean){
+    constructor(ctx: CanvasRenderingContext2D, x: number, y: number, collisionRadius: number, renderCollision: boolean){
         super(ctx, x, y);
         this.collisionRadius = collisionRadius;
         this.renderCollision = renderCollision;

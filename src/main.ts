@@ -12,31 +12,54 @@ const renderCollision = false;
 
 const canvasWidth = 1200;
 const canvasHeight = 800;
-let canvas: any;
-let context: any;
+let canvas: any // HTMLCanvasElement;
+let context: any //CanvasRenderingContext2D;
 
 let secondsPassed = 0;
 let oldTimeStamp = 0;
 let fps: string | number;
 
-// let audioManager: AudioManager;
+// let canvasManager: CanvasManager;
 let gameManager: GameManager;
 let gameObjects: Array<GameObject> = [];
 
 document.addEventListener('DOMContentLoaded', init); 
 
 function init(){
+    // const myCanvas = document.getElementById('my-canvas');
+    // canvas = myCanvas;
+    // context = canvas.getContext('2d');
     canvas = document.getElementById('my-canvas');
     context = canvas.getContext('2d');
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     clearScreen();
-    // audioManager = new AudioManager;
     gameManager = new GameManager;
+
 
     gameManager.Init();
     window.requestAnimationFrame(gameLoop);
 }
+
+// class CanvasManager {
+//     private canvas: any;
+//     private ctx: any;
+
+//     constructor(){
+//         this.canvas = document.getElementById('my-canvas');
+//         this.ctx = canvas.getContext('2d');
+//         this.canvas.width = canvasWidth;
+//         this.canvas.height = canvasHeight;
+//     }
+//     init(){
+//         canvas = this.canvas; // temporary measure to setup the global variable used for now.
+//         context = this.ctx; // temporary measure to setup the global variable used for now.
+
+//     }
+//     GetCtx(){
+//         return this.ctx;
+//     }
+// }
 
 
 function clearScreen(){
@@ -127,9 +150,10 @@ function removeInstances(itemType: any){
 
 class GameManager {
     inputManager: InputManager;
+    // canvasManager: CanvasManager;
     audioManager: AudioManager;
 
-    private gameState: String;
+    private gameState: string;
     private currentLevel;
     private currentLives: number;
     private currentScore: number;
@@ -145,6 +169,7 @@ class GameManager {
     constructor(){
         this.inputManager = new InputManager();
         this.audioManager = new AudioManager();
+        // this.canvasManager = new CanvasManager();
         this.gameState = 'START';
         this.currentLevel = 1;
         this.currentLives = 0;
@@ -326,7 +351,7 @@ class GameManager {
 // }
 
 class HudElement extends GameObject {
-    color: String;
+    color: string;
 
     constructor(startX: number, startY: number){
         super(context, startX, startY);
@@ -335,12 +360,12 @@ class HudElement extends GameObject {
 }
 
 class GameMsg extends HudElement {
-    private font1: String;
-    private font2: String;
-    private text1: String;
-    private text2: String;
-    private text1Color: String;
-    private text2Color: String;
+    private font1: string;
+    private font2: string;
+    private text1: string;
+    private text2: string;
+    private text1Color: string;
+    private text2Color: string;
 
     constructor(text1: string, text2: string, textColor1 = 'white', textColor2 = 'white'){
         super(0,0);
