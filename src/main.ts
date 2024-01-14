@@ -1,4 +1,7 @@
+import GameObject from "./core/gameObject";
 import InputManager from "./core/inputManager";
+import { AudioManager, Sound } from "./core/audio";
+
 
 // debug settings
 const debugHud = false;
@@ -15,9 +18,8 @@ let secondsPassed = 0;
 let oldTimeStamp = 0;
 let fps: string | number;
 
-let audioManager: AudioManager;
+// let audioManager: AudioManager;
 let gameManager: GameManager;
-// let inputManager: InputManager;
 let gameObjects: Array<GameObject> = [];
 
 document.addEventListener('DOMContentLoaded', init); 
@@ -28,12 +30,9 @@ function init(){
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     clearScreen();
-    audioManager = new AudioManager;
-    // inputManager = new InputManager;
+    // audioManager = new AudioManager;
     gameManager = new GameManager;
 
-    // document.body.addEventListener("keydown", (e) => {inputManager.KeyDown(e.keyCode)});
-    // document.body.addEventListener("keyup", (e) => {inputManager.KeyUp(e.keyCode)});
     gameManager.Init();
     window.requestAnimationFrame(gameLoop);
 }
@@ -127,6 +126,7 @@ function removeInstances(itemType: any){
 
 class GameManager {
     inputManager: InputManager;
+    audioManager: AudioManager;
 
     private gameState: String;
     private currentLevel;
@@ -143,15 +143,16 @@ class GameManager {
 
     constructor(){
         this.inputManager = new InputManager();
+        this.audioManager = new AudioManager();
         this.gameState = 'START';
         this.currentLevel = 1;
         this.currentLives = 0;
         this.currentScore = 0;
         this.currentAsteroids = 0;
         this.bonusLivesScore = 25;
-        this.isSoundEnabled = audioManager.CheckAudioEnabled();
-        this.gameOverSound = audioManager.CreateSound('gameOver');
-        this.missionCompleteSound = audioManager.CreateSound('missionComplete'); ;
+        this.isSoundEnabled = this.audioManager.CheckAudioEnabled();
+        this.gameOverSound = this.audioManager.CreateSound('gameOver');
+        this.missionCompleteSound = this.audioManager.CreateSound('missionComplete'); ;
         this.levelData = {
             1: { bigAsteroids: 6, mediumAsteroids: 0, smallAsteroids: 0 },
             2: { bigAsteroids: 7, mediumAsteroids: 2, smallAsteroids: 0 },
@@ -165,7 +166,6 @@ class GameManager {
                 2: { bigAsteroids: 1, mediumAsteroids: 1, smallAsteroids: 2 }
             }
         }
-
         this.player = undefined;
         this.playerRespawnTime = 2;
     }
@@ -175,13 +175,9 @@ class GameManager {
         gameObjects.push(new LivesCounter());
         gameObjects.push(new ScoreCounter());
         gameObjects.push(new GameMsg('Asteroids','Press Enter To Start'));
-        // this.gameOverSound = audioManager.CreateSound('gameOver'); // Must be initialised outside of contructor due to reliance on gameManager.isSoundEnabled within the SoundManager.
-        // this.missionCompleteSound = audioManager.CreateSound('missionComplete'); 
         this.SpawnAsteroids(10);
     }
     CheckGameState(){
-        
-        // const currentInput = inputManager.GetCurrentActions();
         const currentInput = this.inputManager.GetCurrentActions();
 
         switch(this.gameState) {
@@ -314,50 +310,19 @@ class GameManager {
     }
 }
 
-// class InputManager {
-//     private actions;
+// class GameObject {
+//     x: number;
+//     y: number;
 
-//     constructor(){
-//         this.actions = {
-//             leftButton: false,
-//             rightButton: false,
-//             forwardButton: false,
-//             fireButton: false,
-//             startButton: false
-//         }
+//     constructor(x: number, y: number){
+//         this.x = x;
+//         this.y = y;
 //     }
-//     KeyDown(keyCode: number){
-//         if(keyCode === 38 || keyCode == 87) this.actions.forwardButton = true; // UpArrow or W key pressed.
-//         if(keyCode === 37 || keyCode == 65) this.actions.leftButton = true; // LeftArrow or A key pressed.
-//         if(keyCode === 39 || keyCode == 68) this.actions.rightButton = true; // RightArrow or D key pressed.
-//         if(keyCode === 32) this.actions.fireButton = true; // Spacebar key pressed.
-//         if(keyCode === 13) this.actions.startButton = true; // Enter key pressed.
+//     Update(secondsPassed: number){
 //     }
-//     KeyUp(keyCode: number){
-//         if(keyCode === 38 || keyCode === 87) this.actions.forwardButton = false; // UpArrow or W key pressed.
-//         if(keyCode === 37 || keyCode === 65) this.actions.leftButton = false; // LeftArrow or A key pressed.   
-//         if(keyCode === 39 || keyCode === 68) this.actions.rightButton = false; // RightArrow or D key pressed.
-//         if(keyCode === 32) this.actions.fireButton = false; // Spacebar key pressed.
-//         if(keyCode === 13) this.actions.startButton = false; // Enter key pressed.
-//     }
-//     GetCurrentActions(){
-//         return this.actions;
+//     Render(){
 //     }
 // }
-
-class GameObject {
-    x: number;
-    y: number;
-
-    constructor(x: number, y: number){
-        this.x = x;
-        this.y = y;
-    }
-    Update(secondsPassed: number){
-    }
-    Render(){
-    }
-}
 
 class HudElement extends GameObject {
     color: String;
@@ -553,10 +518,10 @@ class Ship extends PhysicsObject {
         this.bulletTimer = 0;
         this.bulletFireDelay = 0.2;
 
-        this.shieldSoundEffect = audioManager.CreateSound('shieldDown');
-        this.shipExplodeSoundEffect = audioManager.CreateSound('shipExplode');
-        this.shipRespawnSoundEffect = audioManager.CreateSound('shipRespawn');
-        this.thrusterSoundEffect = audioManager.CreateSound('shipThrusters', true);
+        this.shieldSoundEffect = gameManager.audioManager.CreateSound('shieldDown');
+        this.shipExplodeSoundEffect = gameManager.audioManager.CreateSound('shipExplode');
+        this.shipRespawnSoundEffect = gameManager.audioManager.CreateSound('shipRespawn');
+        this.thrusterSoundEffect = gameManager.audioManager.CreateSound('shipThrusters', true);
 
         this.strokeColor = 'white';
 
@@ -697,8 +662,8 @@ class Ship extends PhysicsObject {
     }
     CleanUpEffects(){
         this.thrusterSoundEffect.Stop();
-        audioManager.CleanUp(this.shipExplodeSoundEffect);
-        audioManager.CleanUp(this.thrusterSoundEffect);
+        gameManager.audioManager.CleanUp(this.shipExplodeSoundEffect);
+        gameManager.audioManager.CleanUp(this.thrusterSoundEffect);
         this.jetEmitter.Destroy();
     }
 }
@@ -722,11 +687,11 @@ class Bullet extends PhysicsObject {
         this.height = 4;
         this.width = 4;
         this.speed = 2000;
-        this.bulletSoundEffect = audioManager.CreateSound('shootBullet');
+        this.bulletSoundEffect = gameManager.audioManager.CreateSound('shootBullet');
         this.soundPlayed = false;    
     }
     Remove(){
-        audioManager.CleanUp(this.bulletSoundEffect);
+        gameManager.audioManager.CleanUp(this.bulletSoundEffect);
         var i = gameObjects.indexOf(this);
         return gameObjects.splice(i,1);
     }
@@ -808,7 +773,7 @@ class Asteroid extends PhysicsObject {
 
         this.renderRotation = 0;
 
-        this.shotSoundEffect = audioManager.CreateSound('asteroidExplode');
+        this.shotSoundEffect = gameManager.audioManager.CreateSound('asteroidExplode');
 
         this.speed = asteroidSpeeds[level as keyof typeof asteroidSpeeds]
         this.renderRotationSpeed = asteroidRotationSpeeds[level as keyof typeof asteroidRotationSpeeds];
@@ -818,15 +783,13 @@ class Asteroid extends PhysicsObject {
     ScoredHit(){
         this.shotSoundEffect.Play();
         gameManager.AddScore(this.asteroidScores[this.level as keyof typeof this.asteroidScores] ); // NOTE: scores to be moved to gameManager so this will need updating.
-        // gameManager.TrackAsteroids(-1)
         gameObjects.push(new Explosion(this.x, this.y, 10, 2, ['brown'], 1));
         if(this.level === 1 || this.level === 2){
             const spawnLevel = this.level+1;
             gameObjects.push(new Asteroid(spawnLevel, this.x - 5, this.y -5));
             gameObjects.push(new Asteroid(spawnLevel, this.x + 5, this.y + 5));
-            // gameManager.TrackAsteroids(2)
         }
-        audioManager.CleanUp(this.shotSoundEffect);
+        gameManager.audioManager.CleanUp(this.shotSoundEffect);
         var i = gameObjects.indexOf(this);
         return gameObjects.splice(i,1);
     }
@@ -861,92 +824,6 @@ class Asteroid extends PhysicsObject {
         }
         context.closePath();
         context.stroke();
-    }
-}
-
-class AudioManager {
-    private audioPlayers: Array<Sound>;
-    private isAudioEnabled: boolean;
-
-    constructor(){
-        this.audioPlayers = [];
-        this.isAudioEnabled = true;
-    }
-    CheckAudioEnabled(){
-        return this.isAudioEnabled;
-    }
-    ToggleAudioEnabled(enabled = this.isAudioEnabled ? false : true){
-        this.isAudioEnabled = enabled;
-    }
-    CreateSound(soundEffect: string, loop: boolean = false){
-        const newSound = new Sound(soundEffect, loop);
-        this.audioPlayers.push(newSound);
-        return newSound;
-    } 
-    CleanUp(soundInstance: { Remove: () => void; }){
-        if (soundInstance instanceof Sound) {
-            soundInstance.Remove();
-
-            const i = this.audioPlayers.indexOf(soundInstance);
-            if (i !== -1) {
-                this.audioPlayers.splice(i, 1);
-            }
-        } else console.log("CleanUp Failed: Not an instanceof Sound.")
-    }
-}
-
-class Sound {
-    private sound: HTMLAudioElement;
-
-    constructor(soundEffect: any, loop = false) {
-        const sfx = {
-            asteroidExplode: { soundFile: "./audio/space-explosion-with-reverb-101449.mp3", volPercent: 40},
-            gameOver: { soundFile: "./audio/game-fx-9-40197.mp3", volPercent: 50},
-            missionComplete: { soundFile: "./audio/game-level-complete-143022.mp3", volPercent: 50},
-            shieldDown: { soundFile: "./audio/one_beep-99630.mp3", volPercent: 100},
-            shipExplode: { soundFile: "./audio/heavy-cineamtic-hit-166888.mp3", volPercent: 25},
-            shipRespawn: { soundFile: "./audio/robot_01-47250.mp3", volPercent: 50},
-            shipThrusters: { soundFile: "./audio/thrusters_loopwav-14699.mp3", volPercent: 100},
-            shootBullet: { soundFile: "./audio/shoot02wav-14562.mp3", volPercent: 10},
-        }
-
-        this.sound = new Audio(sfx[soundEffect as keyof typeof sfx].soundFile);
-        this.sound.setAttribute("preload", "auto");
-        this.sound.setAttribute("controls", "none");
-        this.sound.style.display = "none";
-        document.body.appendChild(this.sound);
-        this.SetVolume(sfx[soundEffect as keyof typeof sfx].volPercent);
-        this.sound.loop = loop;
-    }
-    SetVolume(volPercent: number) {
-        if (!(volPercent >= 0 && volPercent <= 100)) return console.error('Invalid volume percentage. Please provide a value between 0 and 100.');
-        this.sound.volume = volPercent / 100;
-    }
-    Play() {
-        if(audioManager.CheckAudioEnabled()){
-            try {
-                this.sound.play();
-            } catch(error){
-                console.error(`Error playing sound: ${error}`);
-            }
-        }
-    }
-    Stop() {
-        this.sound.pause();
-    }
-    Remove() {
-        // Remove the element from the DOM after it has finished playing
-        try {
-            if (this.sound) {
-                this.sound.addEventListener('ended', () => {
-                    if (this.sound && this.sound.parentNode) {
-                        this.sound.parentNode.removeChild(this.sound);
-                    }
-                });
-            }
-        } catch (error){
-            console.error(`Error removing sound: ${error}`);
-        }
     }
 }
 
