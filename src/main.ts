@@ -1,5 +1,6 @@
 import GameObject from "./core/gameObject";
 import PhysicsObject from "./core/physicsObject";
+import Particle from "./core/particle";
 import InputManager from "./core/inputManager";
 import { AudioManager, Sound } from "./core/audio";
 
@@ -853,41 +854,6 @@ class Asteroid extends PhysicsObject {
     }
 }
 
-class Particle extends GameObject {
-    private color: string;
-    private velocityX: number;
-    private velocityY: number;
-    private size: number;
-    private lifespan: number;
-    private alpha: number;
-
-    constructor(x: number, y: number, color: string, velocityX: number, velocityY: number, size: number, lifespan: number) {
-        super(context, x, y)
-        this.color = color;
-        this.velocityX = velocityX;
-        this.velocityY = velocityY;
-        this.size = size;
-        this.lifespan = lifespan;
-        this.alpha = 1;
-    }
-    Update(secondsPassed: number) {
-        this.x += this.velocityX * secondsPassed;
-        this.y += this.velocityY * secondsPassed;
-        this.alpha = Math.max(0, this.alpha - secondsPassed / this.lifespan);
-    }
-    Render() {
-        context.globalAlpha = this.alpha;
-        context.fillStyle = this.color;
-        context.beginPath();
-        context.arc(this.x, this.y, this.size, 0, 2 * Math.PI);
-        context.fill();
-        context.globalAlpha = 1;
-    }
-    GetAlpha(){
-       return this.alpha;
-    }
-}
-
 class JetEmitter extends GameObject {
     private particles: Array<Particle>;
     private shouldEmit: boolean;
@@ -930,7 +896,7 @@ class JetEmitter extends GameObject {
             for (let i = 0; i < particlesQty ; i++) {
                 const velocityX = this.velX;
                 const velocityY = this.velY; 
-                const particle = new Particle(this.x, this.y, this.particleColor, velocityX * this.particleSpeedMultiplier, velocityY * this.particleSpeedMultiplier, this.particleSize, this.particleLifespan);
+                const particle = new Particle(context, this.x, this.y, this.particleColor, velocityX * this.particleSpeedMultiplier, velocityY * this.particleSpeedMultiplier, this.particleSize, this.particleLifespan);
                 this.particles.push(particle);
             }
         }
@@ -970,7 +936,7 @@ class Explosion extends GameObject {
             const velocityX = speed * Math.cos(angle);
             const velocityY = speed * Math.sin(angle);
             const particleColor = this.colors[Math.floor(Math.random() * this.colors.length)];
-            const particle = new Particle(this.x, y, particleColor, velocityX, velocityY, this.particleSize, this.particleLifespan);
+            const particle = new Particle(context, this.x, y, particleColor, velocityX, velocityY, this.particleSize, this.particleLifespan);
             this.particles.push(particle);
         }
     }
