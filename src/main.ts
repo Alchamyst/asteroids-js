@@ -1,3 +1,5 @@
+import InputManager from "./core/inputManager";
+
 // debug settings
 const debugHud = false;
 const debugShields = false;
@@ -15,7 +17,7 @@ let fps: string | number;
 
 let audioManager: AudioManager;
 let gameManager: GameManager;
-let inputManager: InputManager;
+// let inputManager: InputManager;
 let gameObjects: Array<GameObject> = [];
 
 document.addEventListener('DOMContentLoaded', init); 
@@ -27,11 +29,11 @@ function init(){
     canvas.height = canvasHeight;
     clearScreen();
     audioManager = new AudioManager;
-    inputManager = new InputManager;
+    // inputManager = new InputManager;
     gameManager = new GameManager;
 
-    document.body.addEventListener("keydown", (e) => {inputManager.KeyDown(e.keyCode)});
-    document.body.addEventListener("keyup", (e) => {inputManager.KeyUp(e.keyCode)});
+    // document.body.addEventListener("keydown", (e) => {inputManager.KeyDown(e.keyCode)});
+    // document.body.addEventListener("keyup", (e) => {inputManager.KeyUp(e.keyCode)});
     gameManager.Init();
     window.requestAnimationFrame(gameLoop);
 }
@@ -124,6 +126,8 @@ function removeInstances(itemType: any){
 }
 
 class GameManager {
+    inputManager: InputManager;
+
     private gameState: String;
     private currentLevel;
     private currentLives: number;
@@ -138,6 +142,7 @@ class GameManager {
     private playerRespawnTime: number;
 
     constructor(){
+        this.inputManager = new InputManager();
         this.gameState = 'START';
         this.currentLevel = 1;
         this.currentLives = 0;
@@ -175,7 +180,9 @@ class GameManager {
         this.SpawnAsteroids(10);
     }
     CheckGameState(){
-        const currentInput = inputManager.GetCurrentActions();
+        
+        // const currentInput = inputManager.GetCurrentActions();
+        const currentInput = this.inputManager.GetCurrentActions();
 
         switch(this.gameState) {
             case 'START':
@@ -307,36 +314,36 @@ class GameManager {
     }
 }
 
-class InputManager {
-    private actions;
+// class InputManager {
+//     private actions;
 
-    constructor(){
-        this.actions = {
-            leftButton: false,
-            rightButton: false,
-            forwardButton: false,
-            fireButton: false,
-            startButton: false
-        }
-    }
-    KeyDown(keyCode: number){
-        if(keyCode === 38 || keyCode == 87) this.actions.forwardButton = true; // UpArrow or W key pressed.
-        if(keyCode === 37 || keyCode == 65) this.actions.leftButton = true; // LeftArrow or A key pressed.
-        if(keyCode === 39 || keyCode == 68) this.actions.rightButton = true; // RightArrow or D key pressed.
-        if(keyCode === 32) this.actions.fireButton = true; // Spacebar key pressed.
-        if(keyCode === 13) this.actions.startButton = true; // Enter key pressed.
-    }
-    KeyUp(keyCode: number){
-        if(keyCode === 38 || keyCode === 87) this.actions.forwardButton = false; // UpArrow or W key pressed.
-        if(keyCode === 37 || keyCode === 65) this.actions.leftButton = false; // LeftArrow or A key pressed.   
-        if(keyCode === 39 || keyCode === 68) this.actions.rightButton = false; // RightArrow or D key pressed.
-        if(keyCode === 32) this.actions.fireButton = false; // Spacebar key pressed.
-        if(keyCode === 13) this.actions.startButton = false; // Enter key pressed.
-    }
-    GetCurrentActions(){
-        return this.actions;
-    }
-}
+//     constructor(){
+//         this.actions = {
+//             leftButton: false,
+//             rightButton: false,
+//             forwardButton: false,
+//             fireButton: false,
+//             startButton: false
+//         }
+//     }
+//     KeyDown(keyCode: number){
+//         if(keyCode === 38 || keyCode == 87) this.actions.forwardButton = true; // UpArrow or W key pressed.
+//         if(keyCode === 37 || keyCode == 65) this.actions.leftButton = true; // LeftArrow or A key pressed.
+//         if(keyCode === 39 || keyCode == 68) this.actions.rightButton = true; // RightArrow or D key pressed.
+//         if(keyCode === 32) this.actions.fireButton = true; // Spacebar key pressed.
+//         if(keyCode === 13) this.actions.startButton = true; // Enter key pressed.
+//     }
+//     KeyUp(keyCode: number){
+//         if(keyCode === 38 || keyCode === 87) this.actions.forwardButton = false; // UpArrow or W key pressed.
+//         if(keyCode === 37 || keyCode === 65) this.actions.leftButton = false; // LeftArrow or A key pressed.   
+//         if(keyCode === 39 || keyCode === 68) this.actions.rightButton = false; // RightArrow or D key pressed.
+//         if(keyCode === 32) this.actions.fireButton = false; // Spacebar key pressed.
+//         if(keyCode === 13) this.actions.startButton = false; // Enter key pressed.
+//     }
+//     GetCurrentActions(){
+//         return this.actions;
+//     }
+// }
 
 class GameObject {
     x: number;
@@ -589,7 +596,7 @@ class Ship extends PhysicsObject {
         this.bulletTimer += secondsPassed;
 
         // Check for inputs affecting ship actions.
-        const currentInput = inputManager.GetCurrentActions();
+        const currentInput = gameManager.inputManager.GetCurrentActions();
         this.wasMovingForward = this.movingForward;
         this.movingForward = currentInput.forwardButton;
         this.dirModifier = 0;
