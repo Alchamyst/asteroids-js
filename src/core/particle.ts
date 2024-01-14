@@ -8,8 +8,9 @@ export default class Particle extends GameObject {
     private lifespan: number;
     private alpha: number;
 
-    constructor(context: CanvasRenderingContext2D, x: number, y: number, color: string, velocityX: number, velocityY: number, size: number, lifespan: number) {
-        super(context, x, y)
+        // Definition needs importing to handle ' gameManager: GameManager '
+    constructor(context: CanvasRenderingContext2D, gameManager: any, x: number, y: number, color: string, velocityX: number, velocityY: number, size: number, lifespan: number) {
+        super(context, gameManager, x, y)
         this.color = color;
         this.velocityX = velocityX;
         this.velocityY = velocityY;
