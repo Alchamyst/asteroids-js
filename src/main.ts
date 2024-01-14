@@ -1,4 +1,5 @@
 import GameObject from "./core/gameObject";
+import PhysicsObject from "./core/physicsObject";
 import InputManager from "./core/inputManager";
 import { AudioManager, Sound } from "./core/audio";
 
@@ -328,7 +329,7 @@ class HudElement extends GameObject {
     color: String;
 
     constructor(startX: number, startY: number){
-        super(startX, startY);
+        super(context, startX, startY);
         this.color = 'white';
     }
 }
@@ -436,38 +437,38 @@ class LivesCounter extends HudElement {
     }
 }
 
-class PhysicsObject extends GameObject {
-    private collisionRadius: number;
-    private renderCollision: boolean;
-    private isColliding: boolean;
+// class PhysicsObject extends GameObject {
+//     private collisionRadius: number;
+//     private renderCollision: boolean;
+//     private isColliding: boolean;
 
-    constructor(x: number, y: number, collisionRadius: number){
-        super(x, y);
-        this.collisionRadius = collisionRadius;
-        this.renderCollision = renderCollision || false; // Useful for debugging.
-        this.isColliding = false; 
-    }
-    Update(secondsPassed: number){
-    }
-    Render(){
-        if(this.renderCollision){
-            context.beginPath();
-            context.strokeStyle = this.isColliding ? 'red' : 'yellow';
-            context.arc(this.x, this.y, this.collisionRadius,0,2* Math.PI);
-            context.closePath();
-            context.stroke();
-        }
-    }
-    GetCollisionStatus(){
-        return this.isColliding;
-    }
-    GetCollisionRadius(){
-        return this.collisionRadius;
-    }
-    SetColliding(isColliding: boolean){
-        this.isColliding = isColliding;
-    }
-}
+//     constructor(ctx: any, x: number, y: number, collisionRadius: number){
+//         super(ctx, x, y);
+//         this.collisionRadius = collisionRadius;
+//         this.renderCollision = renderCollision || false; // Useful for debugging.
+//         this.isColliding = false; 
+//     }
+//     Update(secondsPassed: number){
+//     }
+//     Render(){
+//         if(this.renderCollision){
+//             this.ctx.beginPath();
+//             this.ctx.strokeStyle = this.isColliding ? 'red' : 'yellow';
+//             this.ctx.arc(this.x, this.y, this.collisionRadius,0,2* Math.PI);
+//             this.ctx.closePath();
+//             this.ctx.stroke();
+//         }
+//     }
+//     GetCollisionStatus(){
+//         return this.isColliding;
+//     }
+//     GetCollisionRadius(){
+//         return this.collisionRadius;
+//     }
+//     SetColliding(isColliding: boolean){
+//         this.isColliding = isColliding;
+//     }
+// }
 
 class Ship extends PhysicsObject {
     private strokeColor: string;
@@ -507,7 +508,7 @@ class Ship extends PhysicsObject {
 
         const collisionRadius = 11;
 
-        super(x, y, collisionRadius);
+        super(context, x, y, collisionRadius, renderCollision);
 
         this.radius = 15;
         this.speed = 10;
@@ -681,7 +682,7 @@ class Bullet extends PhysicsObject {
     constructor(x: number, y: number, angle: number){
         const collisionRadius = 3;
 
-        super(x, y, collisionRadius);
+        super(context, x, y, collisionRadius, renderCollision);
 
         this.angle = angle;
         this.height = 4;
@@ -758,7 +759,7 @@ class Asteroid extends PhysicsObject {
         const y = startY || Math.floor(Math.random() * canvasHeight);
         const collisionRadius = asteroidCollisions[level as keyof typeof asteroidCollisions];
 
-        super(x, y, collisionRadius);
+        super(context, x, y, collisionRadius, renderCollision);
         
         // NOTE: To be moved to GameManager
         this.asteroidScores = {
@@ -836,7 +837,7 @@ class Particle extends GameObject {
     private alpha: number;
 
     constructor(x: number, y: number, color: string, velocityX: number, velocityY: number, size: number, lifespan: number) {
-        super(x, y)
+        super(context, x, y)
         this.color = color;
         this.velocityX = velocityX;
         this.velocityY = velocityY;
@@ -875,7 +876,7 @@ class JetEmitter extends GameObject {
 
 
     constructor(x: number, y: number) {
-        super(x, y)
+        super(context, x, y)
         this.particles = [];
         this.shouldEmit = false;
         this.particlesPerSec = 255;
@@ -931,7 +932,7 @@ class Explosion extends GameObject {
     private particleLifespan: number;
 
     constructor(x: number, y: number, particleCount = 10, particleSize = 1, colors = ['white'], particleLifespan: number) {
-        super(x, y)
+        super(context, x, y)
         this.particles = [];
         this.colors = colors;
         this.particleCount = particleCount;
