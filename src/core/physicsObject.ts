@@ -1,5 +1,7 @@
-import GameCanvas from "./gameCanvas";
 import GameObject from "./gameObject";
+
+// Imports for type declarations.
+import GameCanvas from "./gameCanvas";
 
 export default class PhysicsObject extends GameObject {
     private collisionRadius: number;

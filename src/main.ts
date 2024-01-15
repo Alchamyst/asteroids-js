@@ -1,9 +1,10 @@
 import GameCanvas from "./core/gameCanvas";
 import GameObject from "./core/gameObject";
 import PhysicsObject from "./core/physicsObject";
-import { Explosion, JetEmitter, ShipExplosion } from "./gameObjects/particleEffects";
 import InputManager from "./core/inputManager";
 import { AudioManager, Sound } from "./core/audio";
+
+import { Explosion, JetEmitter, ShipExplosion } from "./gameEntities/particleEffects";
 
 
 // debug settings
@@ -12,9 +13,9 @@ const debugShields = false;
 const easyLevels = false;
 const renderCollision = false;
 
-let secondsPassed = 0;
-let oldTimeStamp = 0;
-let fps: string | number;
+let secondsPassed: number = 0;
+let oldTimeStamp: number = 0;
+let fps: number;
 
 let gameManager: GameManager;
 
@@ -151,7 +152,9 @@ class GameManager {
         this.AddGameObject(new LivesCounter(this.gameCanvas));
         this.AddGameObject(new ScoreCounter(this.gameCanvas));
         this.AddGameObject(new GameMsg(this.gameCanvas, 'Asteroids','Press Enter To Start'));
-        this.SpawnAsteroids(10);
+        this.SpawnAsteroids(6, 1);
+        this.SpawnAsteroids(3, 2);
+        this.SpawnAsteroids(2, 3);
     }
     DoGameLoop(timeStamp: number){
         secondsPassed = (timeStamp - oldTimeStamp) / 1000;
@@ -709,9 +712,9 @@ class Asteroid extends PhysicsObject {
         }
 
         const asteroidRotationSpeeds = {
-            1: Math.random() * 2.75,
-            2: Math.random() * 3.25,
-            3: Math.random() * 3.75
+            1: (Math.random() + 0.1) * 2.75,
+            2: (Math.random() + 0.15) * 3.25,
+            3: (Math.random() + 0.15) * 3.75
         }
    
         const collisionRadius = asteroidCollisions[level as keyof typeof asteroidCollisions];

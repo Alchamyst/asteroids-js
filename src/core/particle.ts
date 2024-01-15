@@ -1,5 +1,8 @@
-import GameCanvas from "./gameCanvas";
 import GameObject from "./gameObject";
+
+// Imports for type declarations.
+import GameCanvas from "./gameCanvas";
+
 
 export default class Particle extends GameObject {
     private color: string;

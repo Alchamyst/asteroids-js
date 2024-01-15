@@ -30,8 +30,10 @@ export class AudioManager {
 }
 
 export class Sound {
-    private sound: HTMLAudioElement;
     private audioManager: AudioManager;
+    private sound: HTMLAudioElement;
+    private soundVol: number;
+    
 
     constructor(audioManager: AudioManager, soundEffect: any, loop = false) {
         this.audioManager = audioManager;
@@ -52,7 +54,8 @@ export class Sound {
         this.sound.setAttribute("controls", "none");
         this.sound.style.display = "none";
         document.body.appendChild(this.sound);
-        this.SetVolume(sfx[soundEffect as keyof typeof sfx].volPercent);
+        this.soundVol = sfx[soundEffect as keyof typeof sfx].volPercent
+        this.SetVolume(this.soundVol);
         this.sound.loop = loop;
     }
     SetVolume(volPercent: number) {
@@ -61,6 +64,7 @@ export class Sound {
     }
     Play() {
         if(this.audioManager.CheckAudioEnabled()){
+            this.SetVolume(this.soundVol)
             try {
                 this.sound.play();
             } catch(error){

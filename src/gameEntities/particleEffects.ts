@@ -1,6 +1,8 @@
+import GameObject from "../core/gameObject";
+
+// Imports for type declarations.
 import Particle from "../core/particle";
 import GameCanvas from "../core/gameCanvas";
-import GameObject from "../core/gameObject";
 
 export class Explosion extends GameObject {
     private particles: Array<Particle>;

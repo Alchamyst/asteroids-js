@@ -1,3 +1,4 @@
+// Imports for type declarations.
 import GameCanvas from "./gameCanvas";
 
 export default class GameObject {
