@@ -1,3 +1,4 @@
+import GameCanvas from "./core/gameCanvas";
 import GameObject from "./core/gameObject";
 import PhysicsObject from "./core/physicsObject";
 import { Explosion, JetEmitter, ShipExplosion } from "./gameObjects/particleEffects";
@@ -11,33 +12,20 @@ const debugShields = false;
 const easyLevels = false;
 const renderCollision = false;
 
-const canvasWidth = 1200;
-const canvasHeight = 800;
-let canvas: any // HTMLCanvasElement;
-let context: any //CanvasRenderingContext2D;
-
 let secondsPassed = 0;
 let oldTimeStamp = 0;
 let fps: string | number;
 
-// let canvasManager: CanvasManager;
 let gameManager: GameManager;
-// let gameObjects: Array<GameObject> = [];
 
 document.addEventListener('DOMContentLoaded', init); 
 
 function init(){
-    // const myCanvas = document.getElementById('my-canvas');
-    // canvas = myCanvas;
-    // context = canvas.getContext('2d');
-    canvas = document.getElementById('my-canvas');
-    context = canvas.getContext('2d');
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-    clearScreen();
-    gameManager = new GameManager;
-
-
+    const myCanvasID = 'my-canvas';
+    const myCanvas = document.getElementById(myCanvasID);
+    if(!(myCanvas instanceof HTMLCanvasElement)) throw new Error(`Unable to find canvas with ${myCanvasID}`);
+    const gameCanvas = new GameCanvas(myCanvas);
+    gameManager = new GameManager(gameCanvas);
     gameManager.Init();
     window.requestAnimationFrame(gameLoop);
 }
@@ -46,34 +34,6 @@ function gameLoop(timeStamp: number) {
     gameManager.DoGameLoop(timeStamp);
     window.requestAnimationFrame(gameLoop);
 }
-
-// class CanvasManager {
-//     private canvas: any;
-//     private ctx: any;
-
-//     constructor(){
-//         this.canvas = document.getElementById('my-canvas');
-//         this.ctx = canvas.getContext('2d');
-//         this.canvas.width = canvasWidth;
-//         this.canvas.height = canvasHeight;
-//     }
-//     init(){
-//         canvas = this.canvas; // temporary measure to setup the global variable used for now.
-//         context = this.ctx; // temporary measure to setup the global variable used for now.
-
-//     }
-//     GetCtx(){
-//         return this.ctx;
-//     }
-// }
-
-
-function clearScreen(){
-    context.fillStyle = 'black';
-    context.fillRect(0,0,canvasWidth,canvasHeight); 
-}
-
-
 
 const detectCollisions = (gameObjects: Array<GameObject>) => {
     let obj1;
@@ -130,14 +90,11 @@ function circleIntersect(x1: number, y1: number, r1: number, x2: number, y2: num
     return squareDistance <= ((r1 + r2) * (r1 + r2))
 }
 
-// function removeInstances(itemType: any){
-//     gameObjects = gameObjects.filter(item => !(item instanceof itemType)); 
-// }
 
 class GameManager {
     inputManager: InputManager;
-    // canvasManager: CanvasManager;
     audioManager: AudioManager;
+    gameCanvas: GameCanvas;
 
     private gameObjects: Array<GameObject>;
 
@@ -154,12 +111,12 @@ class GameManager {
     private player: Ship | undefined;
     private playerRespawnTime: number;
 
-    constructor(){
+    constructor(gameCanvas: GameCanvas){
         this.gameObjects = [];
 
         this.inputManager = new InputManager();
         this.audioManager = new AudioManager();
-        // this.canvasManager = new CanvasManager();
+        this.gameCanvas = gameCanvas;
 
         this.gameState = 'START';
         this.currentLevel = 1;
@@ -187,18 +144,20 @@ class GameManager {
         this.playerRespawnTime = 2;
     }
     Init(){
+        this.gameCanvas.ClearScreen();
+
         // Create HUD & Some Asteroids
-        if(debugHud) this.AddGameObject(new DebugHUD());
-        this.AddGameObject(new LivesCounter());
-        this.AddGameObject(new ScoreCounter());
-        this.AddGameObject(new GameMsg('Asteroids','Press Enter To Start'));
+        if(debugHud) this.AddGameObject(new DebugHUD(this.gameCanvas));
+        this.AddGameObject(new LivesCounter(this.gameCanvas));
+        this.AddGameObject(new ScoreCounter(this.gameCanvas));
+        this.AddGameObject(new GameMsg(this.gameCanvas, 'Asteroids','Press Enter To Start'));
         this.SpawnAsteroids(10);
     }
     DoGameLoop(timeStamp: number){
         secondsPassed = (timeStamp - oldTimeStamp) / 1000;
         oldTimeStamp = timeStamp;
         fps = Math.round(1 / secondsPassed);
-        clearScreen();
+        this.gameCanvas.ClearScreen();
 
         // Loop over all game objects and update.
         for (let i = 0; i < this.gameObjects.length; i++) {
@@ -286,7 +245,7 @@ class GameManager {
         }
         this.RemoveGameObjectTypes(Ship);
         this.AddScore(this.currentLives * this.bonusLivesScore);
-        this.AddGameObject(new GameMsg(`LEVEL ${this.currentLevel} COMPLETE`,'Press Enter To Continue.'));
+        this.AddGameObject(new GameMsg(this.gameCanvas, `LEVEL ${this.currentLevel} COMPLETE`,'Press Enter To Continue.'));
     }
     NextLevel(){
         this.gameState = 'LEVEL_SETUP';  
@@ -301,10 +260,10 @@ class GameManager {
         if(this.currentLevel == Object.keys(this.levelData).length){
             this.gameState = 'GAME_OVER';
             this.missionCompleteSound.Play();
-            return this.AddGameObject(new GameMsg('MISSION COMPLETE','Press Enter To Play Again', 'lime'));
+            return this.AddGameObject(new GameMsg(this.gameCanvas, 'MISSION COMPLETE','Press Enter To Play Again', 'lime'));
         }
         this.gameState = 'GAME_OVER';
-        this.AddGameObject(new GameMsg('GAME OVER','Press Enter To Try Again', 'red'));
+        this.AddGameObject(new GameMsg(this.gameCanvas, 'GAME OVER','Press Enter To Try Again', 'red'));
         this.gameOverSound.Play();
     }
     AddScore(points: number){
@@ -340,7 +299,7 @@ class GameManager {
     }
     SpawnAsteroids(amount: number, level = 1){
         for(let i = 0; i < amount; i++){
-            this.AddGameObject(new Asteroid(level));
+            this.AddGameObject(new Asteroid(this.gameCanvas, level));
         }  
     }
     TrackAsteroids(){
@@ -354,7 +313,7 @@ class GameManager {
 
     }
     NewShip(respawn = this.playerRespawnTime){
-        this.player = new Ship(respawn);
+        this.player = new Ship(this.gameCanvas, respawn);
         this.AddGameObject(this.player);
     }
 }
@@ -362,8 +321,8 @@ class GameManager {
 class HudElement extends GameObject {
     color: string;
 
-    constructor(startX: number, startY: number){
-        super(context, gameManager, startX, startY);
+    constructor(gameCanvas: GameCanvas, startX: number, startY: number){
+        super(gameCanvas, gameManager, startX, startY);
         this.color = 'white';
     }
 }
@@ -376,8 +335,8 @@ class GameMsg extends HudElement {
     private text1Color: string;
     private text2Color: string;
 
-    constructor(text1: string, text2: string, textColor1 = 'white', textColor2 = 'white'){
-        super(0,0);
+    constructor(gameCanvas: GameCanvas, text1: string, text2: string, textColor1 = 'white', textColor2 = 'white'){
+        super(gameCanvas ,0,0);
         this.font1 = '50px Arial';
         this.font2 = '20px Arial';
         this.text1 = text1 || 'Foo';
@@ -388,12 +347,12 @@ class GameMsg extends HudElement {
     Update(secondsPassed: number){
     }
     Render(){
-        context.fillStyle = this.text1Color;
-        context.font = this.font1;
-        context.fillText(this.text1, (canvasWidth - context.measureText(this.text1).width) /2, canvasHeight / 2);
-        context.fillStyle = this.text2Color;
-        context.font = this.font2;
-        context.fillText(this.text2, (canvasWidth - (context.measureText(this.text2).width)) / 2, (canvasHeight / 2) + 40);
+        this.ctx.fillStyle = this.text1Color;
+        this.ctx.font = this.font1;
+        this.ctx.fillText(this.text1, (this.canvasWidth - this.ctx.measureText(this.text1).width) /2, this.canvasHeight / 2);
+        this.ctx.fillStyle = this.text2Color;
+        this.ctx.font = this.font2;
+        this.ctx.fillText(this.text2, (this.canvasWidth - (this.ctx.measureText(this.text2).width)) / 2, (this.canvasHeight / 2) + 40);
     }
 }
 
@@ -403,8 +362,10 @@ class DebugHUD extends HudElement {
     private fpsOutput: string;
     private asteroidsOutput: string;
 
-    constructor(){
-        super(canvasWidth-10, canvasHeight-10); 
+    constructor(gameCanvas: GameCanvas){
+        super(gameCanvas, 0, 0); 
+        this.x = this.canvasWidth-10;
+        this.y = this.canvasHeight-10;
         this.font = '25px Arial';  
         this.fpsOutput = "FPS: ";
         this.gameState = "GameState: " + gameManager.GetGameState();
@@ -416,37 +377,37 @@ class DebugHUD extends HudElement {
         this.fpsOutput = "FPS: " + fps;
     }
     Render(){
-        context.font = this.font;
-        context.fillStyle = this.color;
-        context.fillText(this.gameState, this.x - context.measureText(this.gameState).width, this.y); 
-        context.fillText(this.asteroidsOutput, this.x - context.measureText(this.asteroidsOutput).width, this.y - 30);    
-        context.fillText(this.fpsOutput, this.x - context.measureText(this.fpsOutput).width, this.y -60);
+        this.ctx.font = this.font;
+        this.ctx.fillStyle = this.color;
+        this.ctx.fillText(this.gameState, this.x - this.ctx.measureText(this.gameState).width, this.y); 
+        this.ctx.fillText(this.asteroidsOutput, this.x - this.ctx.measureText(this.asteroidsOutput).width, this.y - 30);    
+        this.ctx.fillText(this.fpsOutput, this.x - this.ctx.measureText(this.fpsOutput).width, this.y -60);
     }
 }
 
 class ScoreCounter extends HudElement {
     private score: number;
 
-    constructor(){
-        super(0, 0);     
+    constructor(gameCanvas: GameCanvas){
+        super(gameCanvas, 0, 0);     
         this.score = gameManager.GetCurrentScore();
     }
     Update(secondsPassed: number){
         this.score = gameManager.GetCurrentScore();
     }
     Render(){
-        context.strokeStyle = this.color;
-        context.fillStyle = 'white';
-        context.font = '20px Arial';
-        context.fillText('SCORE: ' + this.score.toString(), 20, 35);
+        this.ctx.strokeStyle = this.color;
+        this.ctx.fillStyle = 'white';
+        this.ctx.font = '20px Arial';
+        this.ctx.fillText('SCORE: ' + this.score.toString(), 20, 35);
     }
 }    
 
 class LivesCounter extends HudElement {
     private lives: number;
 
-    constructor(){
-        super(1175, 10);     
+    constructor(gameCanvas: GameCanvas){
+        super(gameCanvas, 1175, 10);     
         this.lives = gameManager.GetCurrentLives();
         this.color = 'lime';
     }
@@ -456,16 +417,16 @@ class LivesCounter extends HudElement {
     Render(){
         let points = [[9,9],[-9,9]];
         let renderX = this.x 
-        context.strokeStyle = this.color;
+        this.ctx.strokeStyle = this.color;
 
         for(let i = 0; i < this.lives; i++){
-            context.beginPath();
-            context.moveTo(renderX, this.y);
+            this.ctx.beginPath();
+            this.ctx.moveTo(renderX, this.y);
             for(let j = 0; j < points.length; j++){
-                context.lineTo(renderX + points[j][0], this.y + points[j][1]);
+                this.ctx.lineTo(renderX + points[j][0], this.y + points[j][1]);
             }
-            context.closePath();
-            context.stroke();
+            this.ctx.closePath();
+            this.ctx.stroke();
             renderX -= 30;
         }
     }
@@ -503,14 +464,13 @@ class Ship extends PhysicsObject {
 
 
 
-    constructor(respawnTimer = 0){
-        const x = canvasWidth / 2;
-        const y = canvasHeight / 2
-
+    constructor(gameCanvas: GameCanvas, respawnTimer: number = 0){
         const collisionRadius = 11;
 
-        super(context, gameManager, x, y, collisionRadius, renderCollision);
-
+        super(gameCanvas, gameManager, 0, 0, collisionRadius, renderCollision);
+        
+        this.x = this.canvasWidth / 2;
+        this.y = this.canvasHeight / 2;
         this.radius = 15;
         this.speed = 10;
         this.velocityX = 0;
@@ -527,8 +487,8 @@ class Ship extends PhysicsObject {
 
         this.strokeColor = 'white';
 
-        this.noseX = x + 15;
-        this.noseY = y;
+        this.noseX = this.x + 15;
+        this.noseY = this.y;
         this.angle = Math.random();
         this.dirModifier = 0;
         this.respawnTimer = respawnTimer;
@@ -538,7 +498,7 @@ class Ship extends PhysicsObject {
 
         this.jetX = this.x;
         this.jetY = this.y;
-        this.jetEmitter = new JetEmitter(context, gameManager, this.jetX, this.jetY);
+        this.jetEmitter = new JetEmitter(this.gameCanvas, gameManager, this.jetX, this.jetY);
         gameManager.AddGameObject(this.jetEmitter);
     }
     Update(secondsPassed: number){
@@ -570,7 +530,7 @@ class Ship extends PhysicsObject {
         if(currentInput.leftButton) this.dirModifier = -1;
         if(currentInput.rightButton) this.dirModifier = 1;
         if(currentInput.fireButton && this.bulletTimer >= this.bulletFireDelay){
-            gameManager.AddGameObject(new Bullet(this.noseX, this.noseY, this.angle));
+            gameManager.AddGameObject(new Bullet(this.gameCanvas, this.noseX, this.noseY, this.angle));
             this.bulletTimer = 0;
         };
 
@@ -594,10 +554,10 @@ class Ship extends PhysicsObject {
         }
 
         // Move the ship to the other side of the screen if we move out of bounds.
-        if(this.x < this.radius) this.x = canvas.width; 
-        if(this.x > canvas.width) this.x = this.radius; 
-        if(this.y < this.radius) this.y = canvas.height; 
-        if(this.y > canvas.height) this.y = this.radius; 
+        if(this.x < this.radius) this.x = this.canvasWidth; 
+        if(this.x > this.canvasWidth) this.x = this.radius; 
+        if(this.y < this.radius) this.y = this.canvasHeight; 
+        if(this.y > this.canvasHeight) this.y = this.radius; 
 
         // Reduce velocity. Imposes speed cap.
         this.velocityX *= Math.pow(0.5, secondsPassed);
@@ -629,36 +589,36 @@ class Ship extends PhysicsObject {
         let radians = this.angle / Math.PI * 180;
 
         // Render the main ship triangle.
-        context.strokeStyle = this.strokeColor;
-        context.beginPath();
+        this.ctx.strokeStyle = this.strokeColor;
+        this.ctx.beginPath();
         for(let i = 0; i < 3; i++){
-            context.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
+            this.ctx.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
         }
-        context.closePath();
-        context.stroke();
+        this.ctx.closePath();
+        this.ctx.stroke();
 
         // Render front nose marker. 
         this.noseX = this.x - this.radius * Math.cos(radians);
         this.noseY = this.y - this.radius * Math.sin(radians);
-        context.strokeStyle = 'red';
-        context.beginPath();
-        context.arc(this.noseX, this.noseY, 1.5,0,2* Math.PI);
-        context.closePath();
-        context.stroke();
+        this.ctx.strokeStyle = 'red';
+        this.ctx.beginPath();
+        this.ctx.arc(this.noseX, this.noseY, 1.5,0,2* Math.PI);
+        this.ctx.closePath();
+        this.ctx.stroke();
 
         // Render shield visual.
         if (this.shieldTimer > 0){
             let opacity = this.shieldTimer > 1 ? 0.9 : this.shieldTimer;
-            context.beginPath();
-            context.strokeStyle = `rgba(0, 255, 255, ${opacity})`;
-            context.arc(this.x, this.y, (this.GetCollisionRadius()*1.75),0,2* Math.PI);
-            context.closePath();
-            context.stroke();
+            this.ctx.beginPath();
+            this.ctx.strokeStyle = `rgba(0, 255, 255, ${opacity})`;
+            this.ctx.arc(this.x, this.y, (this.GetCollisionRadius()*1.75),0,2* Math.PI);
+            this.ctx.closePath();
+            this.ctx.stroke();
         }
     }
     ShipWasHit(){
         this.shipExplodeSoundEffect.Play();
-        gameManager.AddGameObject(new ShipExplosion(context, gameManager, this.x, this.y));
+        gameManager.AddGameObject(new ShipExplosion(this.gameCanvas, gameManager, this.x, this.y));
         this.CleanUpEffects();
         gameManager.ShipDestroyed();
     }
@@ -679,12 +639,10 @@ class Bullet extends PhysicsObject {
     private bulletSoundEffect: Sound;
     private soundPlayed: boolean
 
-
-
-    constructor(x: number, y: number, angle: number){
+    constructor(gameCanvas: GameCanvas, x: number, y: number, angle: number){
         const collisionRadius = 3;
 
-        super(context, gameManager, x, y, collisionRadius, renderCollision);
+        super(gameCanvas, gameManager, x, y, collisionRadius, renderCollision);
 
         this.angle = angle;
         this.height = 4;
@@ -708,15 +666,15 @@ class Bullet extends PhysicsObject {
         this.x -= Math.cos(radians) * this.speed * secondsPassed;
         this.y -= Math.sin(radians) * this.speed * secondsPassed;
 
-        if(this.x < -25 || this.y < -25 || this.x > canvas.width +25 || this.y > canvas.height +25){
+        if(this.x < -25 || this.y < -25 || this.x > this.canvasWidth +25 || this.y > this.canvasHeight +25){
             this.Remove();
         }
     }
     Render(){
         super.Render();
 
-        context.fillStyle = 'pink';
-        context.fillRect(this.x, this.y, this.width, this.height);
+        this.ctx.fillStyle = 'pink';
+        this.ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 }
 
@@ -733,7 +691,7 @@ class Asteroid extends PhysicsObject {
     private renderRotationSpeed: number
     private shotSoundEffect: Sound;
 
-    constructor(level = 1, startX?: number, startY?: number ){
+    constructor(gameCanvas: GameCanvas, level = 1, startX?: number, startY?: number ){
         const asteroidSizes = {
             1: 50,
             2: 25,
@@ -755,12 +713,13 @@ class Asteroid extends PhysicsObject {
             2: Math.random() * 3.25,
             3: Math.random() * 3.75
         }
-
-        const x = startX || Math.floor(Math.random() * canvasWidth);
-        const y = startY || Math.floor(Math.random() * canvasHeight);
+   
         const collisionRadius = asteroidCollisions[level as keyof typeof asteroidCollisions];
 
-        super(context, gameManager, x, y, collisionRadius, renderCollision);
+        super(gameCanvas, gameManager, 0, 0, collisionRadius, renderCollision);
+
+        this.x = startX || Math.floor(Math.random() * this.canvasWidth);
+        this.y = startY || Math.floor(Math.random() * this.canvasHeight);
         
         // NOTE: To be moved to GameManager
         this.asteroidScores = {
@@ -785,11 +744,11 @@ class Asteroid extends PhysicsObject {
     ScoredHit(){
         this.shotSoundEffect.Play();
         gameManager.AddScore(this.asteroidScores[this.level as keyof typeof this.asteroidScores] ); // NOTE: scores to be moved to gameManager so this will need updating.
-        gameManager.AddGameObject(new Explosion(context, gameManager, this.x, this.y, 10, 2, ['brown'], 1));
+        gameManager.AddGameObject(new Explosion(this.gameCanvas, gameManager, this.x, this.y, 10, 2, ['brown'], 1));
         if(this.level === 1 || this.level === 2){
             const spawnLevel = this.level+1;
-            gameManager.AddGameObject(new Asteroid(spawnLevel, this.x - 5, this.y - 5));
-            gameManager.AddGameObject(new Asteroid(spawnLevel, this.x + 5, this.y + 5));
+            gameManager.AddGameObject(new Asteroid(this.gameCanvas, spawnLevel, this.x - 5, this.y - 5));
+            gameManager.AddGameObject(new Asteroid(this.gameCanvas, spawnLevel, this.x + 5, this.y + 5));
         }
         gameManager.audioManager.CleanUp(this.shotSoundEffect);
         gameManager.RemoveGameObject(this);
@@ -806,24 +765,24 @@ class Asteroid extends PhysicsObject {
         this.y += Math.sin(radians) * this.speed * secondsPassed;
 
         // Move the asteroid to the other side of the screen if we move out of bounds.
-        if(this.x < (this.radius/2)) this.x = canvas.width;
-        if(this.x > canvas.width) this.x = this.radius; 
-        if(this.y < (this.radius/2)) this.y = canvas.height;
-        if(this.y > canvas.height) this.y = this.radius;
+        if(this.x < (this.radius/2)) this.x = this.canvasWidth;
+        if(this.x > this.canvasWidth) this.x = this.radius; 
+        if(this.y < (this.radius/2)) this.y = this.canvasHeight;
+        if(this.y > this.canvasHeight) this.y = this.radius;
     }
     Render(){
         super.Render();
 
-        context.strokeStyle = this.strokeColor;
-        context.beginPath();
+        this.ctx.strokeStyle = this.strokeColor;
+        this.ctx.beginPath();
         let vertAngle = ((Math.PI * 2) / 6);
         
         // Apply rendering rotation to the asteroid's veritces.
         var radians = this.angle / Math.PI * 180 + this.renderRotation;
         for(let i = 0; i < 6; i++){
-            context.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
+            this.ctx.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
         }
-        context.closePath();
-        context.stroke();
+        this.ctx.closePath();
+        this.ctx.stroke();
     }
 }

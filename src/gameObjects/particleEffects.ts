@@ -1,4 +1,5 @@
 import Particle from "../core/particle";
+import GameCanvas from "../core/gameCanvas";
 import GameObject from "../core/gameObject";
 
 export class Explosion extends GameObject {
@@ -9,8 +10,8 @@ export class Explosion extends GameObject {
     private particleLifespan: number;
 
     // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(context: any, gameManager: any, x: number, y: number, particleCount = 10, particleSize = 1, colors = ['white'], particleLifespan: number) {
-        super(context, gameManager, x, y)
+    constructor(gameCanvas: GameCanvas, gameManager: any, x: number, y: number, particleCount = 10, particleSize = 1, colors = ['white'], particleLifespan: number) {
+        super(gameCanvas, gameManager, x, y)
         this.particles = [];
         this.colors = colors;
         this.particleCount = particleCount;
@@ -23,7 +24,7 @@ export class Explosion extends GameObject {
             const velocityX = speed * Math.cos(angle);
             const velocityY = speed * Math.sin(angle);
             const particleColor = this.colors[Math.floor(Math.random() * this.colors.length)];
-            const particle = new Particle(this.ctx, this.gameManager, this.x, y, particleColor, velocityX, velocityY, this.particleSize, this.particleLifespan);
+            const particle = new Particle(this.gameCanvas, this.gameManager, this.x, y, particleColor, velocityX, velocityY, this.particleSize, this.particleLifespan);
             this.particles.push(particle);
         }
     }
@@ -46,7 +47,7 @@ export class Explosion extends GameObject {
 
 export class ShipExplosion extends Explosion {
     // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(context: any, gameManager: any, x: number, y: number){
+    constructor(gameCanvas: GameCanvas, gameManager: any, x: number, y: number){
         const particleCount = 50;
         const particleSize = 1.5;
         const lifespan = 2;
@@ -59,7 +60,7 @@ export class ShipExplosion extends Explosion {
             'pink',
             'rgba(0, 255, 255, 1)' // Shield color.
         ]
-        super(context, gameManager, x, y, particleCount, particleSize, colors, lifespan);
+        super(gameCanvas, gameManager, x, y, particleCount, particleSize, colors, lifespan);
     }
 }
 
@@ -75,8 +76,8 @@ export class JetEmitter extends GameObject {
     private velY: number;
 
     // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(context: any, gameManager: any, x: number, y: number) {
-        super(context, gameManager, x, y)
+    constructor(gameCanvas: GameCanvas, gameManager: any, x: number, y: number) {
+        super(gameCanvas, gameManager, x, y)
         this.particles = [];
         this.shouldEmit = false;
         this.particlesPerSec = 255;
@@ -105,7 +106,7 @@ export class JetEmitter extends GameObject {
             for (let i = 0; i < particlesQty ; i++) {
                 // const velocityX = this.velX;
                 // const velocityY = this.velY; 
-                const particle = new Particle(this.ctx, this.gameManager, this.x, this.y, this.particleColor, this.velX * this.particleSpeedMultiplier, this.velY * this.particleSpeedMultiplier, this.particleSize, this.particleLifespan);
+                const particle = new Particle(this.gameCanvas, this.gameManager, this.x, this.y, this.particleColor, this.velX * this.particleSpeedMultiplier, this.velY * this.particleSpeedMultiplier, this.particleSize, this.particleLifespan);
                 this.particles.push(particle);
             }
         }

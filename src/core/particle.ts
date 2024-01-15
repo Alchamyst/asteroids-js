@@ -1,3 +1,4 @@
+import GameCanvas from "./gameCanvas";
 import GameObject from "./gameObject";
 
 export default class Particle extends GameObject {
@@ -9,8 +10,8 @@ export default class Particle extends GameObject {
     private alpha: number;
 
         // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(context: CanvasRenderingContext2D, gameManager: any, x: number, y: number, color: string, velocityX: number, velocityY: number, size: number, lifespan: number) {
-        super(context, gameManager, x, y)
+    constructor(gameCanvas: GameCanvas, gameManager: any, x: number, y: number, color: string, velocityX: number, velocityY: number, size: number, lifespan: number) {
+        super(gameCanvas, gameManager, x, y)
         this.color = color;
         this.velocityX = velocityX;
         this.velocityY = velocityY;
