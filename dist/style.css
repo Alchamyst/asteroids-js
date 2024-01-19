@@ -26,20 +26,17 @@ noscript {
     margin: auto;
 }
 
-#controls {
-    visibility: hidden;
-}
-
 #my-canvas {
     background: #000;
     border: 1px solid #fff;
-    visibility: hidden;
+    display: none;
 }
 
 #controls {
-    visibility: hidden;
+    display: none;
 }
+
 #no-game {
-    visibility: hidden;
+    display: none;
     text-align: center;
 }

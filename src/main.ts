@@ -33,18 +33,18 @@ function init(){
 
     if(shouldLoadGame){
         if(!(myCanvas instanceof HTMLCanvasElement)) throw new Error(`Unable to find canvas with ${myCanvasID}`);
-        if(controls) controls.style.visibility = 'visible';
-        if(myCanvas) myCanvas.style.visibility = 'visible';
-        if(noGame) noGame.style.visibility = 'hidden';  
+        if(controls) controls.style.display = 'block';
+        if(myCanvas) myCanvas.style.display = 'block';
+        if(noGame) noGame.style.display = 'none';  
         const gameCanvas = new GameCanvas(myCanvas);
         gameManager = new GameManager(gameCanvas);
         gameManager.Init();
         window.requestAnimationFrame(gameLoop);
     }
     if(!shouldLoadGame){ 
-        if(controls) controls.style.visibility = 'hidden';
-        if(myCanvas) myCanvas.style.visibility = 'hidden';
-        if(noGame) noGame.style.visibility = 'visible';        
+        if(controls) controls.style.display = 'none';
+        if(myCanvas) myCanvas.style.display = 'none';
+        if(noGame) noGame.style.display = 'block';        
     }
 }
 
