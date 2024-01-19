@@ -2,6 +2,12 @@ body {
     background: #000;
 }
 
+p {
+    font-family: system-ui,sans-serif;
+    font-size: 1em;
+    color: #F0F0F0;
+}
+
 li {
     font-family: system-ui,sans-serif;
     font-size: 1em;
@@ -10,20 +16,30 @@ li {
     list-style-type: none;
 }
 
+noscript {
+    height: 100%;
+    text-align: center;
+}
+
 #container {
     max-width: 1200px;
     margin: auto;
 }
+
+#controls {
+    visibility: hidden;
+}
+
 #my-canvas {
     background: #000;
     border: 1px solid #fff;
+    visibility: hidden;
+}
+
+#controls {
+    visibility: hidden;
 }
 #no-game {
     visibility: hidden;
     text-align: center;
-}
-#no-game p {
-    font-family: system-ui,sans-serif;
-    font-size: 1em;
-    color: #F0F0F0;
 }
