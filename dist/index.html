@@ -11,11 +11,16 @@
         <div id='container'>
             <canvas id='my-canvas'></canvas>
         </div>
-        <div>
+        <div id='controls'>
             <ul>
                 <li>Movement: &nbsp;&nbsp; A W D &nbsp;&nbsp;&nbsp; &#8592; &#8593; &#8594;</li>
                 <li>Fire: &nbsp;&nbsp; Spacebar</li>
             </ul>
+        </div>
+        <div id='no-game'>
+            <p>Game was not loaded.</p>
+            <p>You can refresh the page to retry.</p>
+            <button onClick="window.location.reload();">Refresh Page</button>
         </div>
     </body>
 </html>

@@ -24,11 +24,49 @@ document.addEventListener('DOMContentLoaded', init);
 function init(){
     const myCanvasID = 'my-canvas';
     const myCanvas = document.getElementById(myCanvasID);
-    if(!(myCanvas instanceof HTMLCanvasElement)) throw new Error(`Unable to find canvas with ${myCanvasID}`);
-    const gameCanvas = new GameCanvas(myCanvas);
-    gameManager = new GameManager(gameCanvas);
-    gameManager.Init();
-    window.requestAnimationFrame(gameLoop);
+    const shouldLoadGame = checkDevice() && checkResolution() ? true : false;
+
+    if(shouldLoadGame){
+        if(!(myCanvas instanceof HTMLCanvasElement)) throw new Error(`Unable to find canvas with ${myCanvasID}`);
+        const gameCanvas = new GameCanvas(myCanvas);
+        gameManager = new GameManager(gameCanvas);
+        gameManager.Init();
+        window.requestAnimationFrame(gameLoop);
+    }
+    if(!shouldLoadGame){
+        const controlsID = 'controls';
+        const noGameID = 'no-game';
+        const controls = document.getElementById(controlsID);
+        const noGame = document.getElementById(noGameID);
+        
+        if(controls) controls.style.visibility = 'hidden';
+        if(myCanvas) myCanvas.style.visibility = 'hidden';
+        if(noGame) noGame.style.visibility = 'visible';        
+    }
+}
+
+// Confirm we should still load the game if on a touch device, as a keyboard is required.
+function checkDevice(){
+    if (navigator.maxTouchPoints > 1){
+        const message = "A keyboard is required to play this game on your device.\nDo you want to still load the game?";
+        return confirm(message);
+    }
+    return true;
+}
+function checkResolution(){
+    const recommendedWidth = 1225;
+    const recommendedHeight = 825;
+    const browserWidth = window.innerWidth;
+    const browserHeight = window.innerHeight;
+
+    console.log(`browserWidth = ${browserWidth}`);
+    console.log(`browserHeight = ${browserHeight}`);
+
+    if( (browserWidth < recommendedWidth) || (browserHeight <  recommendedHeight) ){
+        const message = "Your window size is lower than the recommended minimum of 1250x825.\nDo you want to still load the game?";
+        return confirm(message);
+    }
+    return true;
 }
 
 function gameLoop(timeStamp: number) {

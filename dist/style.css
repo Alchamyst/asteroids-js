@@ -18,3 +18,12 @@ li {
     background: #000;
     border: 1px solid #fff;
 }
+#no-game {
+    visibility: hidden;
+    text-align: center;
+}
+#no-game p {
+    font-family: system-ui,sans-serif;
+    font-size: 1em;
+    color: #F0F0F0;
+}
