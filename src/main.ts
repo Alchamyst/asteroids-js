@@ -23,22 +23,25 @@ document.addEventListener('DOMContentLoaded', init);
 
 function init(){
     const myCanvasID = 'my-canvas';
+    const controlsID = 'controls';
+    const noGameID = 'no-game';
+
     const myCanvas = document.getElementById(myCanvasID);
+    const controls = document.getElementById(controlsID);
+    const noGame = document.getElementById(noGameID);
     const shouldLoadGame = checkDevice() && checkResolution() ? true : false;
 
     if(shouldLoadGame){
         if(!(myCanvas instanceof HTMLCanvasElement)) throw new Error(`Unable to find canvas with ${myCanvasID}`);
+        if(controls) controls.style.visibility = 'visible';
+        if(myCanvas) myCanvas.style.visibility = 'visible';
+        if(noGame) noGame.style.visibility = 'hidden';  
         const gameCanvas = new GameCanvas(myCanvas);
         gameManager = new GameManager(gameCanvas);
         gameManager.Init();
         window.requestAnimationFrame(gameLoop);
     }
-    if(!shouldLoadGame){
-        const controlsID = 'controls';
-        const noGameID = 'no-game';
-        const controls = document.getElementById(controlsID);
-        const noGame = document.getElementById(noGameID);
-        
+    if(!shouldLoadGame){ 
         if(controls) controls.style.visibility = 'hidden';
         if(myCanvas) myCanvas.style.visibility = 'hidden';
         if(noGame) noGame.style.visibility = 'visible';        
