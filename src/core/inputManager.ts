@@ -1,5 +1,6 @@
 export default class InputManager {
     private actions;
+    private gameKeys: Array<number>;
 
     constructor(){
         this.actions = {
@@ -9,7 +10,13 @@ export default class InputManager {
             fireButton: false,
             startButton: false
         }
-        document.body.addEventListener("keydown", (e) => {this.KeyDown(e.keyCode)});
+        this.gameKeys = [13, 32, 37, 38, 39, 65, 68, 87];
+        document.body.addEventListener("keydown", (e) => {
+            this.KeyDown(e.keyCode);
+            if(this.CheckGameKey(e.keyCode)){
+                e.preventDefault();
+            }
+        });
         document.body.addEventListener("keyup", (e) => {this.KeyUp(e.keyCode)});
     }
     KeyDown(keyCode: number){
@@ -28,5 +35,9 @@ export default class InputManager {
     }
     GetCurrentActions(){
         return this.actions;
+    }
+    CheckGameKey(keycode: number){
+        if( this.gameKeys.includes(keycode)) return true;
+        return false;
     }
 }
