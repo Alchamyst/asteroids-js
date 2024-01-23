@@ -6,24 +6,18 @@ import { AudioManager, Sound } from "./core/audio";
 
 import Asteroid from "./gameEntities/asteroid";
 import Bullet from "./gameEntities/bullet";
-import { Explosion, JetEmitter, ShipExplosion } from "./gameEntities/particleEffects";
+import { JetEmitter, ShipExplosion } from "./gameEntities/particleEffects";
+import { DebugHUD, GameMsg, LivesCounter, ScoreCounter } from "./gameEntities/gameHud";
 
 
 // debug settings
-// const debugSettings = {
-//     debugHud: false,
-//     debugShields: false,
-//     easyLevels: false,
-//     renderCollision: false  
-// }
 const debugHud = false;
 const debugShields = false;
 const easyLevels = false;
 const renderCollision = false;
 
-let secondsPassed: number = 0;
-let oldTimeStamp: number = 0;
-let fps: number;
+// let secondsPassed: number = 0;
+// let oldTimeStamp: number = 0;
 
 let gameManager: GameManager;
 
@@ -143,6 +137,10 @@ class GameManager {
     audioManager: AudioManager;
     gameCanvas: GameCanvas;
 
+    private fps: number;
+    private secondsPassed: number;
+    private oldTimeStamp: number;
+
     // private renderCollision: boolean;
 
     private gameObjects: Array<GameObject>;
@@ -166,6 +164,9 @@ class GameManager {
         this.inputManager = new InputManager();
         this.audioManager = new AudioManager();
         this.gameCanvas = gameCanvas;
+        this.fps = 0;
+        this.secondsPassed = 0;
+        this.oldTimeStamp = 0;
 
         // this.renderCollision = debugSettings.renderCollision;
 
@@ -198,10 +199,10 @@ class GameManager {
         this.gameCanvas.ClearScreen();
 
         // Create HUD & Some Asteroids
-        if(debugHud) this.AddGameObject(new DebugHUD(this.gameCanvas));
-        this.AddGameObject(new LivesCounter(this.gameCanvas));
-        this.AddGameObject(new ScoreCounter(this.gameCanvas));
-        this.AddGameObject(new GameMsg(this.gameCanvas, 'Asteroids','Press Enter To Start'));
+        if(debugHud) this.AddGameObject(new DebugHUD(this.gameCanvas, this));
+        this.AddGameObject(new LivesCounter(this.gameCanvas, this));
+        this.AddGameObject(new ScoreCounter(this.gameCanvas, this));
+        this.AddGameObject(new GameMsg(this.gameCanvas, this, 'Asteroids','Press Enter To Start'));
         this.SpawnAsteroids(6, 1);
         this.SpawnAsteroids(3, 2);
         this.SpawnAsteroids(2, 3);
@@ -211,18 +212,18 @@ class GameManager {
             console.log('Game is in GAME_OVER state. Checking update logic.');
         }
 
-        secondsPassed = (timeStamp - oldTimeStamp) / 1000;
-        oldTimeStamp = timeStamp;
-        fps = Math.round(1 / secondsPassed);
+        this.secondsPassed = (timeStamp - this.oldTimeStamp) / 1000;
+        this.oldTimeStamp = timeStamp;
+        this.fps = Math.round(1 / this.secondsPassed);
         this.gameCanvas.ClearScreen();
 
         // Loop over all game objects and update.
         for (let i = 0; i < this.gameObjects.length; i++) {
-            this.gameObjects[i].Update(secondsPassed);
+            this.gameObjects[i].Update(this.secondsPassed);
         }
 
         detectCollisions(this.gameObjects);
-        gameManager.CheckGameState();
+        this.CheckGameState();
 
         // Loop over all game objects and draw.
         for (let i = 0; i < this.gameObjects.length; i++) {
@@ -288,6 +289,7 @@ class GameManager {
     GetCurrentAsteroids(){ return this.currentAsteroids }
     GetCurrentScore(){ return this.currentScore }
     GetCurrentLives(){ return this.currentLives }
+    GetFps(){ return this.fps }
     IsSoundEnabled(){ return this.isSoundEnabled }
     NewGame(){
         this.gameState = 'LEVEL_SETUP';
@@ -302,7 +304,7 @@ class GameManager {
         }
         this.RemoveGameObjectTypes(Ship);
         this.AddScore(this.currentLives * this.bonusLivesScore);
-        this.AddGameObject(new GameMsg(this.gameCanvas, `LEVEL ${this.currentLevel} COMPLETE`,'Press Enter To Continue.'));
+        this.AddGameObject(new GameMsg(this.gameCanvas, this,  `LEVEL ${this.currentLevel} COMPLETE`,'Press Enter To Continue.'));
     }
     NextLevel(){
         this.gameState = 'LEVEL_SETUP';  
@@ -317,10 +319,10 @@ class GameManager {
         if(this.currentLevel == Object.keys(this.levelData).length){
             this.gameState = 'GAME_OVER';
             this.missionCompleteSound.Play();
-            return this.AddGameObject(new GameMsg(this.gameCanvas, 'MISSION COMPLETE','Press Enter To Play Again', 'lime'));
+            return this.AddGameObject(new GameMsg(this.gameCanvas, this, 'MISSION COMPLETE','Press Enter To Play Again', 'lime'));
         }
         this.gameState = 'GAME_OVER';
-        this.AddGameObject(new GameMsg(this.gameCanvas, 'GAME OVER','Press Enter To Try Again', 'red'));
+        this.AddGameObject(new GameMsg(this.gameCanvas, this, 'GAME OVER','Press Enter To Try Again', 'red'));
         this.gameOverSound.Play();
     }
     AddScore(points: number){
@@ -375,119 +377,123 @@ class GameManager {
     }
 }
 
-class HudElement extends GameObject {
-    color: string;
+// class HudElement extends GameObject {
+//     color: string;
 
-    constructor(gameCanvas: GameCanvas, startX: number, startY: number){
-        super(gameCanvas, gameManager, startX, startY);
-        this.color = 'white';
-    }
-}
+//     constructor(gameCanvas: GameCanvas, startX: number, startY: number){
+//         super(gameCanvas, gameManager, startX, startY);
+//         this.color = 'white';
+//     }
+// }
 
-class GameMsg extends HudElement {
-    private font1: string;
-    private font2: string;
-    private text1: string;
-    private text2: string;
-    private text1Color: string;
-    private text2Color: string;
+// class GameMsg extends HudElement {
+//     private font1: string;
+//     private font2: string;
+//     private text1: string;
+//     private text2: string;
+//     private text1Color: string;
+//     private text2Color: string;
 
-    constructor(gameCanvas: GameCanvas, text1: string, text2: string, textColor1 = 'white', textColor2 = 'white'){
-        super(gameCanvas ,0,0);
-        this.font1 = '50px Arial';
-        this.font2 = '20px Arial';
-        this.text1 = text1 || 'Foo';
-        this.text2 = text2 || 'Bar';
-        this.text1Color = textColor1;
-        this.text2Color = textColor2;
-    }
-    Update(secondsPassed: number){
-    }
-    Render(){
-        this.ctx.fillStyle = this.text1Color;
-        this.ctx.font = this.font1;
-        this.ctx.fillText(this.text1, (this.canvasWidth - this.ctx.measureText(this.text1).width) /2, this.canvasHeight / 2);
-        this.ctx.fillStyle = this.text2Color;
-        this.ctx.font = this.font2;
-        this.ctx.fillText(this.text2, (this.canvasWidth - (this.ctx.measureText(this.text2).width)) / 2, (this.canvasHeight / 2) + 40);
-    }
-}
+//     // Definition needs importing to handle ' gameManager: GameManager '
+//     constructor(gameCanvas: GameCanvas, gameManager: any, text1: string, text2: string, textColor1 = 'white', textColor2 = 'white'){
+//         super(gameCanvas, gameManager, 0, 0);
+//         this.font1 = '50px Arial';
+//         this.font2 = '20px Arial';
+//         this.text1 = text1 || 'Foo';
+//         this.text2 = text2 || 'Bar';
+//         this.text1Color = textColor1;
+//         this.text2Color = textColor2;
+//     }
+//     Update(secondsPassed: number){
+//     }
+//     Render(){
+//         this.ctx.fillStyle = this.text1Color;
+//         this.ctx.font = this.font1;
+//         this.ctx.fillText(this.text1, (this.canvasWidth - this.ctx.measureText(this.text1).width) /2, this.canvasHeight / 2);
+//         this.ctx.fillStyle = this.text2Color;
+//         this.ctx.font = this.font2;
+//         this.ctx.fillText(this.text2, (this.canvasWidth - (this.ctx.measureText(this.text2).width)) / 2, (this.canvasHeight / 2) + 40);
+//     }
+// }
 
-class DebugHUD extends HudElement {
-    private gameState: string;
-    private font: string;
-    private fpsOutput: string;
-    private asteroidsOutput: string;
+// class DebugHUD extends HudElement {
+//     private gameState: string;
+//     private font: string;
+//     private fpsOutput: string;
+//     private asteroidsOutput: string;
 
-    constructor(gameCanvas: GameCanvas){
-        super(gameCanvas, 0, 0); 
-        this.x = this.canvasWidth-10;
-        this.y = this.canvasHeight-10;
-        this.font = '25px Arial';  
-        this.fpsOutput = "FPS: ";
-        this.gameState = "GameState: " + gameManager.GetGameState();
-        this.asteroidsOutput = "Asteroids: " + gameManager.GetCurrentAsteroids();
-    }
-    Update(secondsPassed: number){
-        this.gameState = "GameState: " + gameManager.GetGameState();
-        this.asteroidsOutput = "Asteroids: " + gameManager.GetCurrentAsteroids();
-        this.fpsOutput = "FPS: " + fps;
-    }
-    Render(){
-        this.ctx.font = this.font;
-        this.ctx.fillStyle = this.color;
-        this.ctx.fillText(this.gameState, this.x - this.ctx.measureText(this.gameState).width, this.y); 
-        this.ctx.fillText(this.asteroidsOutput, this.x - this.ctx.measureText(this.asteroidsOutput).width, this.y - 30);    
-        this.ctx.fillText(this.fpsOutput, this.x - this.ctx.measureText(this.fpsOutput).width, this.y -60);
-    }
-}
+//     // Definition needs importing to handle ' gameManager: GameManager '
+//     constructor(gameCanvas: GameCanvas, gameManager: any){
+//         super(gameCanvas, gameManager, 0, 0); 
+//         this.x = this.canvasWidth-10;
+//         this.y = this.canvasHeight-10;
+//         this.font = '25px Arial';  
+//         this.fpsOutput = "FPS: ";
+//         this.gameState = "GameState: " + gameManager.GetGameState();
+//         this.asteroidsOutput = "Asteroids: " + gameManager.GetCurrentAsteroids();
+//     }
+//     Update(secondsPassed: number){
+//         this.gameState = "GameState: " + gameManager.GetGameState();
+//         this.asteroidsOutput = "Asteroids: " + gameManager.GetCurrentAsteroids();
+//         this.fpsOutput = "FPS: " + fps;
+//     }
+//     Render(){
+//         this.ctx.font = this.font;
+//         this.ctx.fillStyle = this.color;
+//         this.ctx.fillText(this.gameState, this.x - this.ctx.measureText(this.gameState).width, this.y); 
+//         this.ctx.fillText(this.asteroidsOutput, this.x - this.ctx.measureText(this.asteroidsOutput).width, this.y - 30);    
+//         this.ctx.fillText(this.fpsOutput, this.x - this.ctx.measureText(this.fpsOutput).width, this.y -60);
+//     }
+// }
 
-class ScoreCounter extends HudElement {
-    private score: number;
+// class ScoreCounter extends HudElement {
+//     private score: number;
 
-    constructor(gameCanvas: GameCanvas){
-        super(gameCanvas, 0, 0);     
-        this.score = gameManager.GetCurrentScore();
-    }
-    Update(secondsPassed: number){
-        this.score = gameManager.GetCurrentScore();
-    }
-    Render(){
-        this.ctx.strokeStyle = this.color;
-        this.ctx.fillStyle = 'white';
-        this.ctx.font = '20px Arial';
-        this.ctx.fillText('SCORE: ' + this.score.toString(), 20, 35);
-    }
-}    
+//     // Definition needs importing to handle ' gameManager: GameManager '
+//     constructor(gameCanvas: GameCanvas, gameManager: any){
+//         super(gameCanvas, gameManager, 0, 0);     
+//         this.score = gameManager.GetCurrentScore();
+//     }
+//     Update(secondsPassed: number){
+//         this.score = gameManager.GetCurrentScore();
+//     }
+//     Render(){
+//         this.ctx.strokeStyle = this.color;
+//         this.ctx.fillStyle = 'white';
+//         this.ctx.font = '20px Arial';
+//         this.ctx.fillText('SCORE: ' + this.score.toString(), 20, 35);
+//     }
+// }    
 
-class LivesCounter extends HudElement {
-    private lives: number;
+// class LivesCounter extends HudElement {
+//     private lives: number;
 
-    constructor(gameCanvas: GameCanvas){
-        super(gameCanvas, 1175, 10);     
-        this.lives = gameManager.GetCurrentLives();
-        this.color = 'lime';
-    }
-    Update(secondsPassed: number){
-        this.lives = gameManager.GetCurrentLives();
-    }
-    Render(){
-        let points = [[9,9],[-9,9]];
-        let renderX = this.x 
-        this.ctx.strokeStyle = this.color;
+//     // Definition needs importing to handle ' gameManager: GameManager '
+//     constructor(gameCanvas: GameCanvas, gameManager: any){
+//         super(gameCanvas, gameManager, 1175, 10);     
+//         this.lives = gameManager.GetCurrentLives();
+//         this.color = 'lime';
+//     }
+//     Update(secondsPassed: number){
+//         this.lives = gameManager.GetCurrentLives();
+//     }
+//     Render(){
+//         let points = [[9,9],[-9,9]];
+//         let renderX = this.x 
+//         this.ctx.strokeStyle = this.color;
 
-        for(let i = 0; i < this.lives; i++){
-            this.ctx.beginPath();
-            this.ctx.moveTo(renderX, this.y);
-            for(let j = 0; j < points.length; j++){
-                this.ctx.lineTo(renderX + points[j][0], this.y + points[j][1]);
-            }
-            this.ctx.closePath();
-            this.ctx.stroke();
-            renderX -= 30;
-        }
-    }
-}
+//         for(let i = 0; i < this.lives; i++){
+//             this.ctx.beginPath();
+//             this.ctx.moveTo(renderX, this.y);
+//             for(let j = 0; j < points.length; j++){
+//                 this.ctx.lineTo(renderX + points[j][0], this.y + points[j][1]);
+//             }
+//             this.ctx.closePath();
+//             this.ctx.stroke();
+//             renderX -= 30;
+//         }
+//     }
+// }
 
 class Ship extends PhysicsObject {
     private strokeColor: string;
@@ -537,10 +543,10 @@ class Ship extends PhysicsObject {
         this.bulletTimer = 0;
         this.bulletFireDelay = 0.2;
 
-        this.shieldSoundEffect = gameManager.audioManager.CreateSound('shieldDown');
-        this.shipExplodeSoundEffect = gameManager.audioManager.CreateSound('shipExplode');
-        this.shipRespawnSoundEffect = gameManager.audioManager.CreateSound('shipRespawn');
-        this.thrusterSoundEffect = gameManager.audioManager.CreateSound('shipThrusters', true);
+        this.shieldSoundEffect = this.gameManager.audioManager.CreateSound('shieldDown');
+        this.shipExplodeSoundEffect = this.gameManager.audioManager.CreateSound('shipExplode');
+        this.shipRespawnSoundEffect = this.gameManager.audioManager.CreateSound('shipRespawn');
+        this.thrusterSoundEffect = this.gameManager.audioManager.CreateSound('shipThrusters', true);
 
         this.strokeColor = 'white';
 
@@ -555,8 +561,8 @@ class Ship extends PhysicsObject {
 
         this.jetX = this.x;
         this.jetY = this.y;
-        this.jetEmitter = new JetEmitter(this.gameCanvas, gameManager, this.jetX, this.jetY);
-        gameManager.AddGameObject(this.jetEmitter);
+        this.jetEmitter = new JetEmitter(this.gameCanvas, this.gameManager, this.jetX, this.jetY);
+        this.gameManager.AddGameObject(this.jetEmitter);
     }
     Update(secondsPassed: number){
         this.respawnTimer = Math.max(0, this.respawnTimer - secondsPassed); // Tick respawn timer.
@@ -580,14 +586,14 @@ class Ship extends PhysicsObject {
         this.bulletTimer += secondsPassed;
 
         // Check for inputs affecting ship actions.
-        const currentInput = gameManager.inputManager.GetCurrentActions();
+        const currentInput = this.gameManager.inputManager.GetCurrentActions();
         this.wasMovingForward = this.movingForward;
         this.movingForward = currentInput.forwardButton;
         this.dirModifier = 0;
         if(currentInput.leftButton) this.dirModifier = -1;
         if(currentInput.rightButton) this.dirModifier = 1;
         if(currentInput.fireButton && this.bulletTimer >= this.bulletFireDelay){
-            gameManager.AddGameObject(new Bullet(this.gameCanvas, gameManager, this.noseX, this.noseY, renderCollision, this.angle));
+            this.gameManager.AddGameObject(new Bullet(this.gameCanvas, this.gameManager, this.noseX, this.noseY, renderCollision, this.angle));
             this.bulletTimer = 0;
         };
 
@@ -675,123 +681,14 @@ class Ship extends PhysicsObject {
     }
     ShipWasHit(){
         this.shipExplodeSoundEffect.Play();
-        gameManager.AddGameObject(new ShipExplosion(this.gameCanvas, gameManager, this.x, this.y));
+        this.gameManager.AddGameObject(new ShipExplosion(this.gameCanvas, this.gameManager, this.x, this.y));
         this.CleanUpEffects();
-        gameManager.ShipDestroyed();
+        this.gameManager.ShipDestroyed();
     }
     CleanUpEffects(){
         this.thrusterSoundEffect.Stop();
-        gameManager.audioManager.CleanUp(this.shipExplodeSoundEffect);
-        gameManager.audioManager.CleanUp(this.thrusterSoundEffect);
-        gameManager.RemoveGameObject(this.jetEmitter);
+        this.gameManager.audioManager.CleanUp(this.shipExplodeSoundEffect);
+        this.gameManager.audioManager.CleanUp(this.thrusterSoundEffect);
+        this.gameManager.RemoveGameObject(this.jetEmitter);
     }
 }
-
-// class Asteroid extends PhysicsObject {
-//     private asteroidScores: { 1: number, 2: number, 3: number };
-
-//     private level: number;
-
-//     private angle: number;
-//     private speed: number;
-//     private radius: number;
-//     private strokeColor: string;
-//     private renderRotation: number;
-//     private renderRotationSpeed: number
-//     private shotSoundEffect: Sound;
-
-//     constructor(gameCanvas: GameCanvas, level = 1, startX?: number, startY?: number ){
-//         const asteroidSizes = {
-//             1: 50,
-//             2: 25,
-//             3: 15
-//         }
-//         const asteroidCollisions = {
-//             1: 46,
-//             2: 22,
-//             3: 12
-//         }
-//         const asteroidSpeeds = {
-//             1: 200,
-//             2: 240,
-//             3: 275
-//         }
-
-//         const asteroidRotationSpeeds = {
-//             1: (Math.random() + 0.1) * 2.75,
-//             2: (Math.random() + 0.15) * 3.25,
-//             3: (Math.random() + 0.15) * 3.75
-//         }
-   
-//         const collisionRadius = asteroidCollisions[level as keyof typeof asteroidCollisions];
-
-//         super(gameCanvas, gameManager, 0, 0, collisionRadius, renderCollision);
-
-//         this.x = startX || Math.floor(Math.random() * this.canvasWidth);
-//         this.y = startY || Math.floor(Math.random() * this.canvasHeight);
-        
-//         // NOTE: To be moved to GameManager
-//         this.asteroidScores = {
-//             1: 5,
-//             2: 7,
-//             3: 9
-//         }
-
-//         this.level = level || 1;
-//         this.angle = Math.floor(Math.random() * 328);
-//         this.strokeColor = 'rgb(180,138,113)';
-
-//         this.renderRotation = 0;
-
-//         this.shotSoundEffect = gameManager.audioManager.CreateSound('asteroidExplode');
-
-//         this.speed = asteroidSpeeds[level as keyof typeof asteroidSpeeds]
-//         this.renderRotationSpeed = asteroidRotationSpeeds[level as keyof typeof asteroidRotationSpeeds];
-//         this.radius = asteroidSizes[level as keyof typeof asteroidSizes]
-        
-//     }
-//     ScoredHit(){
-//         this.shotSoundEffect.Play();
-//         gameManager.AddScore(this.asteroidScores[this.level as keyof typeof this.asteroidScores] ); // NOTE: scores to be moved to gameManager so this will need updating.
-//         gameManager.AddGameObject(new Explosion(this.gameCanvas, gameManager, this.x, this.y, 10, 2, ['brown'], 1));
-//         if(this.level === 1 || this.level === 2){
-//             const spawnLevel = this.level+1;
-//             gameManager.AddGameObject(new Asteroid(this.gameCanvas, spawnLevel, this.x - 5, this.y - 5));
-//             gameManager.AddGameObject(new Asteroid(this.gameCanvas, spawnLevel, this.x + 5, this.y + 5));
-//         }
-//         gameManager.audioManager.CleanUp(this.shotSoundEffect);
-//         gameManager.RemoveGameObject(this);
-//     }
-//     Update(secondsPassed: number){
-//         super.Update(secondsPassed);
-
-//         // Update the rendering rotation over time.
-//         this.renderRotation += this.renderRotationSpeed * secondsPassed;
-
-//         // Update asteroid location over time.
-//         var radians = this.angle / Math.PI * 180;
-//         this.x += Math.cos(radians) * this.speed * secondsPassed;
-//         this.y += Math.sin(radians) * this.speed * secondsPassed;
-
-//         // Move the asteroid to the other side of the screen if we move out of bounds.
-//         if(this.x < (this.radius/2)) this.x = this.canvasWidth;
-//         if(this.x > this.canvasWidth) this.x = this.radius; 
-//         if(this.y < (this.radius/2)) this.y = this.canvasHeight;
-//         if(this.y > this.canvasHeight) this.y = this.radius;
-//     }
-//     Render(){
-//         super.Render();
-
-//         this.ctx.strokeStyle = this.strokeColor;
-//         this.ctx.beginPath();
-//         let vertAngle = ((Math.PI * 2) / 6);
-        
-//         // Apply rendering rotation to the asteroid's veritces.
-//         var radians = this.angle / Math.PI * 180 + this.renderRotation;
-//         for(let i = 0; i < 6; i++){
-//             this.ctx.lineTo(this.x - this.radius * Math.cos(vertAngle * i + radians), this.y - this.radius * Math.sin(vertAngle * i + radians))
-//         }
-//         this.ctx.closePath();
-//         this.ctx.stroke();
-//     }
-// }
