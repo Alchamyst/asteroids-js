@@ -26,11 +26,14 @@ export default class PhysicsObject extends GameObject {
             this.ctx.stroke();
         }
     }
-    GetCollisionStatus(){
+    GetIsColliding(){
         return this.isColliding;
     }
     GetCollisionRadius(){
         return this.collisionRadius;
+    }
+    GetRenderCollision(){
+        return this.renderCollision;
     }
     SetColliding(isColliding: boolean){
         this.isColliding = isColliding;
