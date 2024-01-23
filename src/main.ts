@@ -4,6 +4,7 @@ import PhysicsObject from "./core/physicsObject";
 import InputManager from "./core/inputManager";
 import { AudioManager, Sound } from "./core/audio";
 
+import Bullet from "./gameEntities/bullet";
 import { Explosion, JetEmitter, ShipExplosion } from "./gameEntities/particleEffects";
 
 
@@ -61,9 +62,6 @@ function checkResolution(){
     const recommendedHeight = 825;
     const browserWidth = window.innerWidth;
     const browserHeight = window.innerHeight;
-
-    console.log(`browserWidth = ${browserWidth}`);
-    console.log(`browserHeight = ${browserHeight}`);
 
     if( (browserWidth < recommendedWidth) || (browserHeight <  recommendedHeight) ){
         const message = "Your window size is lower than the recommended minimum of 1250x825.\nDo you want to still load the game?";
@@ -198,6 +196,10 @@ class GameManager {
         this.SpawnAsteroids(2, 3);
     }
     DoGameLoop(timeStamp: number){
+        if (this.gameState === 'GAME_OVER') {
+            console.log('Game is in GAME_OVER state. Checking update logic.');
+        }
+
         secondsPassed = (timeStamp - oldTimeStamp) / 1000;
         oldTimeStamp = timeStamp;
         fps = Math.round(1 / secondsPassed);
@@ -574,7 +576,7 @@ class Ship extends PhysicsObject {
         if(currentInput.leftButton) this.dirModifier = -1;
         if(currentInput.rightButton) this.dirModifier = 1;
         if(currentInput.fireButton && this.bulletTimer >= this.bulletFireDelay){
-            gameManager.AddGameObject(new Bullet(this.gameCanvas, this.noseX, this.noseY, this.angle));
+            gameManager.AddGameObject(new Bullet(this.gameCanvas, gameManager, this.noseX, this.noseY, renderCollision, this.angle));
             this.bulletTimer = 0;
         };
 
@@ -670,55 +672,7 @@ class Ship extends PhysicsObject {
         this.thrusterSoundEffect.Stop();
         gameManager.audioManager.CleanUp(this.shipExplodeSoundEffect);
         gameManager.audioManager.CleanUp(this.thrusterSoundEffect);
-        // this.jetEmitter.Destroy();
         gameManager.RemoveGameObject(this.jetEmitter);
-    }
-}
-
-class Bullet extends PhysicsObject {
-    private angle: number;
-    private height: number;
-    private width: number;
-    private speed: number;
-    private bulletSoundEffect: Sound;
-    private soundPlayed: boolean
-
-    constructor(gameCanvas: GameCanvas, x: number, y: number, angle: number){
-        const collisionRadius = 3;
-
-        super(gameCanvas, gameManager, x, y, collisionRadius, renderCollision);
-
-        this.angle = angle;
-        this.height = 4;
-        this.width = 4;
-        this.speed = 2000;
-        this.bulletSoundEffect = gameManager.audioManager.CreateSound('shootBullet');
-        this.soundPlayed = false;    
-    }
-    Remove(){
-        gameManager.audioManager.CleanUp(this.bulletSoundEffect);
-        gameManager.RemoveGameObject(this);
-    }
-    Update(secondsPassed: number){
-        super.Update(secondsPassed);
-
-        if(!this.soundPlayed){
-            this.bulletSoundEffect.Play();
-            this.soundPlayed = true;
-        }
-        var radians = this.angle / Math.PI * 180;
-        this.x -= Math.cos(radians) * this.speed * secondsPassed;
-        this.y -= Math.sin(radians) * this.speed * secondsPassed;
-
-        if(this.x < -25 || this.y < -25 || this.x > this.canvasWidth +25 || this.y > this.canvasHeight +25){
-            this.Remove();
-        }
-    }
-    Render(){
-        super.Render();
-
-        this.ctx.fillStyle = 'pink';
-        this.ctx.fillRect(this.x, this.y, this.width, this.height);
     }
 }
 

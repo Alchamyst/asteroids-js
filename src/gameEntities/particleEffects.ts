@@ -29,8 +29,10 @@ export class Explosion extends GameObject {
             const particle = new Particle(this.gameCanvas, this.gameManager, this.x, y, particleColor, velocityX, velocityY, this.particleSize, this.particleLifespan);
             this.particles.push(particle);
         }
+        console.log('Constructor called for Explosion.');
     }
     Update(secondsPassed: number) {
+        console.log('Update method called for Explosion.');
         for (const particle of this.particles) {
             particle.Update(secondsPassed);
         }
