@@ -190,10 +190,12 @@ export default class Ship extends PhysicsObject {
         }
     }
     ShipWasHit(){
+        this.gameManager.ResolveShipHit();
+    }
+    ShipExplodes(){
         this.shipExplodeSoundEffect.Play();
         this.gameManager.AddGameObject(new ShipExplosion(this.gameCanvas, this.gameManager, this.x, this.y));
         this.CleanUpEffects();
-        this.gameManager.ShipDestroyed();
     }
     CleanUpEffects(){
         this.thrusterSoundEffect.Stop();

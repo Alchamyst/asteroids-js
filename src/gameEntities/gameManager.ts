@@ -37,7 +37,6 @@ export default class GameManager {
     private currentScore: number;
     private currentAsteroids: number;
     private bonusLivesScore: number;
-    private isSoundEnabled: boolean;
     private gameOverSound: Sound;
     private missionCompleteSound: Sound;
     private levelData;
@@ -65,7 +64,6 @@ export default class GameManager {
         this.currentScore = 0;
         this.currentAsteroids = 0;
         this.bonusLivesScore = 25;
-        this.isSoundEnabled = this.audioManager.CheckAudioEnabled();
         this.gameOverSound = this.audioManager.CreateSound('gameOver');
         this.missionCompleteSound = this.audioManager.CreateSound('missionComplete'); ;
         this.levelData = {
@@ -147,7 +145,7 @@ export default class GameManager {
                 this.TrackAsteroids();
                 if(this.currentAsteroids == 0){
                     if(this.currentLevel == Object.keys(this.levelData).length){
-                        return this.GameOver();
+                        return this.MissionComplete();
                     }
                     this.LevelComplete();
                 }
@@ -176,7 +174,7 @@ export default class GameManager {
     GetCurrentScore(){ return this.currentScore }
     GetCurrentLives(){ return this.currentLives }
     GetFps(){ return this.fps }
-    IsSoundEnabled(){ return this.isSoundEnabled }
+    GetIsSoundEnabled(){ return this.audioManager.CheckAudioEnabled() }
     NewGame(){
         this.gameState = 'LEVEL_SETUP';
         this.currentLevel = 1;
@@ -198,27 +196,28 @@ export default class GameManager {
         this.LevelSetup();
     }
     GameOver(){
-        if(this.player){
-            this.player.CleanUpEffects(); 
-        }
-        this.RemoveGameObjectTypes(Ship);
-        if(this.currentLevel == Object.keys(this.levelData).length){
-            this.gameState = 'GAME_OVER';
-            this.missionCompleteSound.Play();
-            return this.AddGameObject(new GameMsg(this.gameCanvas, this, 'MISSION COMPLETE','Press Enter To Play Again', 'lime'));
-        }
         this.gameState = 'GAME_OVER';
         this.AddGameObject(new GameMsg(this.gameCanvas, this, 'GAME OVER','Press Enter To Try Again', 'red'));
         this.gameOverSound.Play();
     }
+    MissionComplete(){
+        if(this.player){
+            this.player.CleanUpEffects(); 
+        }
+        this.RemoveGameObjectTypes(Ship);
+        this.gameState = 'GAME_OVER';
+        this.missionCompleteSound.Play();
+        return this.AddGameObject(new GameMsg(this.gameCanvas, this, 'MISSION COMPLETE','Press Enter To Play Again', 'lime'));
+    }
     AddScore(points: number){
         this.currentScore += points; 
     }
-    ShipDestroyed(){
+    ResolveShipHit(){
         this.currentLives -= 1;
+        this.DestroyShip();
+
         if(this.currentLives <= 0) return this.GameOver();
 
-        this.RemoveGameObjectTypes(Ship);
         this.NewShip();
     }
     LevelSetup(){
@@ -260,5 +259,9 @@ export default class GameManager {
     NewShip(respawn = this.playerRespawnTime){
         this.player = new Ship(this.gameCanvas, this, this.renderCollision, respawn, this.debugShields);
         this.AddGameObject(this.player);
+    }
+    DestroyShip(){
+        this.player?.ShipExplodes();
+        this.RemoveGameObjectTypes(Ship);
     }
 }
