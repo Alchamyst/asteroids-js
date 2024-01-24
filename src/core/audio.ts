@@ -35,7 +35,7 @@ export class Sound {
     private soundVol: number;
     
 
-    constructor(audioManager: AudioManager, soundEffect: any, loop = false) {
+    constructor(audioManager: AudioManager, soundEffect: string, loop = false) {
         this.audioManager = audioManager;
 
         const sfx = {

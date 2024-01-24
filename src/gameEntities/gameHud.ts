@@ -1,7 +1,6 @@
-import HudElement from "../core/hudElement";
-
-// Imports for type declarations.
 import GameCanvas from "../core/gameCanvas";
+import GameManager from "../gameEntities/gameManager";
+import HudElement from "../core/hudElement";
 
 export class DebugHUD extends HudElement {
     private gameState: string;
@@ -9,8 +8,7 @@ export class DebugHUD extends HudElement {
     private fpsOutput: string;
     private asteroidsOutput: string;
 
-    // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any){
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager){
         super(gameCanvas, gameManager, 0, 0); 
         this.x = this.canvasWidth-10;
         this.y = this.canvasHeight-10;
@@ -41,8 +39,7 @@ export class GameMsg extends HudElement {
     private text1Color: string;
     private text2Color: string;
 
-    // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any, text1: string, text2: string, textColor1 = 'white', textColor2 = 'white'){
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager, text1: string, text2: string, textColor1 = 'white', textColor2 = 'white'){
         super(gameCanvas, gameManager, 0, 0);
         this.font1 = '50px Arial';
         this.font2 = '20px Arial';
@@ -66,8 +63,7 @@ export class GameMsg extends HudElement {
 export class ScoreCounter extends HudElement {
     private score: number;
 
-    // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any){
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager){
         super(gameCanvas, gameManager, 0, 0);     
         this.score = this.gameManager.GetCurrentScore();
     }
@@ -85,8 +81,7 @@ export class ScoreCounter extends HudElement {
 export class LivesCounter extends HudElement {
     private lives: number;
 
-    // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any){
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager){
         super(gameCanvas, gameManager, 1175, 10);     
         this.lives = this.gameManager.GetCurrentLives();
         this.color = 'lime';

@@ -1,9 +1,9 @@
-import PhysicsObject from "../core/physicsObject";
-import { Explosion } from "./particleEffects";
-
-// Imports for type declarations.
-import { Sound } from "../core/audio";
 import GameCanvas from "../core/gameCanvas";
+import GameManager from "../gameEntities/gameManager";
+import PhysicsObject from "../core/physicsObject";
+
+import { Explosion } from "./particleEffects";
+import { Sound } from "../core/audio";
 
 export default class Asteroid extends PhysicsObject {
     private asteroidScores: { 1: number, 2: number, 3: number };
@@ -18,8 +18,7 @@ export default class Asteroid extends PhysicsObject {
     private renderRotationSpeed: number
     private shotSoundEffect: Sound;
 
-    // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any, renderCollision: boolean, level = 1, startX?: number, startY?: number ){
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager, renderCollision: boolean, level = 1, startX?: number, startY?: number ){
         const asteroidSizes = {
             1: 50,
             2: 25,

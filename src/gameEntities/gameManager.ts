@@ -1,15 +1,19 @@
-import InputManager from "../core/inputManager";
-import GameCanvas from "../core/gameCanvas";
-import { AudioManager, Sound } from "../core/audio";
-import { detectCollisions } from "../core/collisionDetection";
 
 import Asteroid from "./asteroid";
+import GameCanvas from "../core/gameCanvas";
+import GameObject from "../core/gameObject";
+import InputManager from "../core/inputManager";
 import Ship from "./ship";
+import { AudioManager, Sound } from "../core/audio";
+import { detectCollisions } from "../core/collisionDetection";
 import { DebugHUD, GameMsg, LivesCounter, ScoreCounter } from "./gameHud";
 
-
-// Imports for type declarations.
-import GameObject from "../core/gameObject";
+type DebugSettings = {
+    debugHud: boolean;
+    debugShields: boolean;
+    easyLevels: boolean;
+    renderCollision: boolean;
+};
 
 export default class GameManager {
     inputManager: InputManager;
@@ -40,8 +44,7 @@ export default class GameManager {
     private player: Ship | undefined;
     private playerRespawnTime: number;
 
-    // ANY type for debugSettings needs correcting here
-    constructor(gameCanvas: GameCanvas, debugSettings: any){
+    constructor(gameCanvas: GameCanvas, debugSettings: DebugSettings){
         this.gameObjects = [];
 
         this.inputManager = new InputManager();
@@ -132,7 +135,6 @@ export default class GameManager {
         switch(this.gameState) {
             case 'START':
                 if(currentInput.startButton){
-                    // removeInstances(GameMsg);
                     this.RemoveGameObjectTypes(GameMsg);
                     this.NewGame();
                 } 
@@ -153,7 +155,6 @@ export default class GameManager {
 
             case 'LEVEL_COMPLETE':
                 if(currentInput.startButton){
-                    // removeInstances(GameMsg);
                     this.RemoveGameObjectTypes(GameMsg);
                     this.NextLevel();
                 } 
@@ -161,7 +162,6 @@ export default class GameManager {
 
             case 'GAME_OVER':
                 if(currentInput.startButton){
-                    // removeInstances(GameMsg);
                     this.RemoveGameObjectTypes(GameMsg);
                     this.NewGame();
                 } 

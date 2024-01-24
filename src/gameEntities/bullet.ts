@@ -1,7 +1,6 @@
-import PhysicsObject from "../core/physicsObject";
-
-// Imports for type declarations.
 import GameCanvas from "../core/gameCanvas";
+import GameManager from "../gameEntities/gameManager";
+import PhysicsObject from "../core/physicsObject";
 import { Sound } from "../core/audio";
 
 export default class Bullet extends PhysicsObject {
@@ -12,8 +11,7 @@ export default class Bullet extends PhysicsObject {
     private bulletSoundEffect: Sound;
     private soundPlayed: boolean
 
-    // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any, x: number, y: number, renderCollision: boolean, angle: number){
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager, x: number, y: number, renderCollision: boolean, angle: number){
         const collisionRadius = 3;
 
         super(gameCanvas, gameManager, x, y, collisionRadius, renderCollision);

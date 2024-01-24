@@ -1,7 +1,7 @@
+import GameCanvas from "./gameCanvas";
+import GameManager from "../gameEntities/gameManager";
 import GameObject from "./gameObject";
 
-// Imports for type declarations.
-import GameCanvas from "./gameCanvas";
 
 
 export default class Particle extends GameObject {
@@ -12,8 +12,7 @@ export default class Particle extends GameObject {
     private lifespan: number;
     private alpha: number;
 
-        // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any, x: number, y: number, color: string, velocityX: number, velocityY: number, size: number, lifespan: number) {
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager, x: number, y: number, color: string, velocityX: number, velocityY: number, size: number, lifespan: number) {
         super(gameCanvas, gameManager, x, y)
         this.color = color;
         this.velocityX = velocityX;

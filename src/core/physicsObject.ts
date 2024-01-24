@@ -1,15 +1,13 @@
-import GameObject from "./gameObject";
-
-// Imports for type declarations.
 import GameCanvas from "./gameCanvas";
+import GameManager from "../gameEntities/gameManager";
+import GameObject from "./gameObject";
 
 export default class PhysicsObject extends GameObject {
     private collisionRadius: number;
     private renderCollision: boolean;
     private isColliding: boolean;
 
-    // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any, x: number, y: number, collisionRadius: number, renderCollision: boolean){
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager, x: number, y: number, collisionRadius: number, renderCollision: boolean){
         super(gameCanvas, gameManager, x, y);
         this.collisionRadius = collisionRadius;
         this.renderCollision = renderCollision;

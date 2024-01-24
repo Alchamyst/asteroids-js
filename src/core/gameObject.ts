@@ -1,17 +1,16 @@
-// Imports for type declarations.
 import GameCanvas from "./gameCanvas";
+import GameManager from "../gameEntities/gameManager";
 
 export default class GameObject {
     gameCanvas: GameCanvas;
     canvasWidth: number;
     canvasHeight: number;
     ctx: CanvasRenderingContext2D;
-    gameManager: any; // Definition needs importing to handle ' gameManager: GameManager '
+    gameManager: GameManager;
     x: number;
     y: number;
 
-    // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any, x: number, y: number){
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager, x: number, y: number){
         this.gameCanvas = gameCanvas;
         this.canvasWidth = gameCanvas.GetCanvas().width;
         this.canvasHeight = gameCanvas.GetCanvas().height;

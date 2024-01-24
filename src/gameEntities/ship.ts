@@ -1,10 +1,9 @@
-import PhysicsObject from "../core/physicsObject";
 import Bullet from "./bullet";
-import { JetEmitter, ShipExplosion } from "./particleEffects";
-
-// Imports for type declarations.
-import { Sound } from "../core/audio";
 import GameCanvas from "../core/gameCanvas";
+import GameManager from "./gameManager";
+import PhysicsObject from "../core/physicsObject";
+import { JetEmitter, ShipExplosion } from "./particleEffects";
+import { Sound } from "../core/audio";
 
 export default class Ship extends PhysicsObject {
     private strokeColor: string;
@@ -37,8 +36,7 @@ export default class Ship extends PhysicsObject {
     private jetY: number;
     private jetEmitter: JetEmitter;
 
-    // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any, renderCollision: boolean, respawnTimer: number = 0, debugShields: boolean = false){
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager, renderCollision: boolean, respawnTimer: number = 0, debugShields: boolean = false){
         const collisionRadius = 11;
 
         super(gameCanvas, gameManager, 0, 0, collisionRadius, renderCollision);

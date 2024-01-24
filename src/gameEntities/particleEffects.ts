@@ -1,8 +1,7 @@
-import GameObject from "../core/gameObject";
-
-// Imports for type declarations.
-import Particle from "../core/particle";
 import GameCanvas from "../core/gameCanvas";
+import GameManager from "./gameManager";
+import GameObject from "../core/gameObject";
+import Particle from "../core/particle";
 
 export class Explosion extends GameObject {
     private particles: Array<Particle>;
@@ -11,8 +10,7 @@ export class Explosion extends GameObject {
     private particleSize: number;
     private particleLifespan: number;
 
-    // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any, x: number, y: number, particleCount = 10, particleSize = 1, colors = ['white'], particleLifespan: number) {
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager, x: number, y: number, particleCount = 10, particleSize = 1, colors = ['white'], particleLifespan: number) {
         super(gameCanvas, gameManager, x, y)
         this.particles = [];
         this.colors = colors;
@@ -50,8 +48,7 @@ export class Explosion extends GameObject {
 }
 
 export class ShipExplosion extends Explosion {
-    // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any, x: number, y: number){
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager, x: number, y: number){
         const particleCount = 50;
         const particleSize = 1.5;
         const lifespan = 2;
@@ -79,12 +76,11 @@ export class JetEmitter extends GameObject {
     private velX: number;
     private velY: number;
 
-    // Definition needs importing to handle ' gameManager: GameManager '
-    constructor(gameCanvas: GameCanvas, gameManager: any, x: number, y: number) {
+    constructor(gameCanvas: GameCanvas, gameManager: GameManager, x: number, y: number) {
         super(gameCanvas, gameManager, x, y)
         this.particles = [];
         this.shouldEmit = false;
-        this.particlesPerSec = 255;
+        this.particlesPerSec = 255; // This is affecting quality of the explosion.
         this.particleSize = 2;
         this.particleColor = 'orange';
         this.particleLifespan = 0.1;
@@ -106,10 +102,8 @@ export class JetEmitter extends GameObject {
     }
     Update(secondsPassed: number) {
         if(this.shouldEmit){
-            const particlesQty = Math.floor(this.particlesPerSec * secondsPassed); // This is affecting quality!
+            const particlesQty = Math.floor(this.particlesPerSec * secondsPassed); 
             for (let i = 0; i < particlesQty ; i++) {
-                // const velocityX = this.velX;
-                // const velocityY = this.velY; 
                 const particle = new Particle(this.gameCanvas, this.gameManager, this.x, this.y, this.particleColor, this.velX * this.particleSpeedMultiplier, this.velY * this.particleSpeedMultiplier, this.particleSize, this.particleLifespan);
                 this.particles.push(particle);
             }
